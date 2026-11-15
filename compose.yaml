@@ -1,0 +1,66 @@
+# vedun service on Docker Desktop (WSL2), reachable only from this machine: http://127.0.0.1:8765
+#
+#   start:  kprun run vedun openrouter typesafe -- docker compose up -d --build
+#   stop:   docker compose down            (all data stays in the host folders below)
+#   logs:   docker compose logs -f vedun
+#   schema: docker compose run --rm vedun python -m vedun migrate   (once after an upgrade, service stopped)
+#   local:  compose.override.yaml (not tracked) adds your own folders: PDF source, notes, a private profile
+#
+# Secrets come from the host environment (kprun entry vedun: VEDUN_API_KEY, VEDUN_DASH_USER, VEDUN_DASH_PASSWORD;
+# entries openrouter, typesafe). An unset secret is passed as empty: the service then answers 503 on every
+# protected route (fail closed) and /api/health stays open.
+name: vedun
+
+services:
+  vedun:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: vedun:local
+    container_name: vedun
+    init: true
+    # always: comes back whenever Docker Desktop starts (it auto-starts at Windows sign-in), even after a manual
+    # `docker compose stop`. Only `docker compose down` (removes the container) disables autostart until the next `up`.
+    restart: always
+    ports:
+      - "127.0.0.1:8765:8765"
+    # --- hardening: non-root (uid 10001 in the image), no capabilities, read-only root filesystem
+    read_only: true
+    tmpfs:
+      - /tmp
+    cap_drop:
+      - ALL
+    security_opt:
+      - no-new-privileges:true
+    environment:
+      OPENROUTER_API_KEY: ${OPENROUTER_API_KEY:-}
+      TYPESAFE_API_KEY: ${TYPESAFE_API_KEY:-}
+      VEDUN_API_KEY: ${VEDUN_API_KEY:-}
+      VEDUN_DASH_USER: ${VEDUN_DASH_USER:-}
+      VEDUN_DASH_PASSWORD: ${VEDUN_DASH_PASSWORD:-}
+      VEDUN_DAILY_BUDGET_USD: ${VEDUN_DAILY_BUDGET_USD:-3.0}
+      VEDUN_RATE_LIMIT_PER_MIN: ${VEDUN_RATE_LIMIT_PER_MIN:-60}
+      # how the HOST sees the mounted folders, so agents running on the host can open the files directly
+      # (empty = paths are shown as the container sees them); set them in compose.override.yaml or .env
+      VEDUN_HOST_ROOT: "${VEDUN_HOST_ROOT:-}"
+      VEDUN_HOST_PDF_DIR: "${VEDUN_HOST_PDF_DIR:-}"
+      # VEDUN_ROOT / VEDUN_PDF_DIR / VEDUN_STATE_DIR / VEDUN_REPO_DIR / HF_HOME are set in the Dockerfile
+    volumes:
+      # PERSISTENCE: everything that matters is a host bind mount, nothing lives in the container layer.
+      # The project folder is mounted as a DIRECTORY: vedun.db (+ journal / -wal / -shm), md/, figures/,
+      # reports/ (sync reports + audit.jsonl), vedun.config.json (corpus profile), and .state-docker/ (job history, catalog cache,
+      # budget ledger, last citation results; own folder, so a host run with .state/ never shares a SQLite file
+      # with the container). Do not run a host `sync` while the container is up (two writers, one SQLite file).
+      - ./:/data/kb
+      - ${VEDUN_PDF_HOST:-./pdf}:/data/pdf # read-write: uploaded and downloaded PDFs land here
+      - ${VEDUN_REPO_HOST:-./notes}:/repo:ro # notes scanned by check-citations (only *.md / *.txt)
+      - vedun_hf:/hf # Docling / Hugging Face models (~0.5 GB), re-downloadable cache, not user data
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request,sys; sys.exit(0 if urllib.request.urlopen('http://127.0.0.1:8765/api/health', timeout=4).status == 200 else 1)"]
+      interval: 30s
+      timeout: 5s
+      start_period: 40s
+      retries: 3
+
+volumes:
+  vedun_hf:

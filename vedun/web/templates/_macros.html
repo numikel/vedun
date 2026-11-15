@@ -1,0 +1,80 @@
+{# Shared UI building blocks. Import with:  {% import "_macros.html" as m %} #}
+{# Visible text goes through _("English source"); the Polish catalogue lives in vedun/web/catalog_pl.py. #}
+
+{% macro icon(name, cls='') -%}
+<svg class="icon {{ cls }}" aria-hidden="true" focusable="false" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><use href="#i-{{ name }}"/></svg>
+{%- endmacro %}
+
+{# Colour + icon + text: status is never conveyed by colour alone. #}
+{% macro badge(label, icon_name, tone='muted', title='') -%}
+<span class="badge badge-{{ tone }}"{% if title %} title="{{ title }}"{% endif %}>{{ icon(icon_name) }}<span>{{ label }}</span></span>
+{%- endmacro %}
+
+{% macro catalog_badge(status) -%}
+{% set meta = STATUS_META.get(status, STATUS_META['unknown']) %}
+{{ badge(_(meta[0]), meta[1], meta[2]) }}
+{%- endmacro %}
+
+{% macro job_badge(status) -%}
+{% set meta = JOB_STATUS_META.get(status, ('' ~ status, 'help', 'muted')) %}
+<span class="badge badge-{{ meta[2] }}">{{ icon(meta[1], 'spin' if status == 'running' else '') }}<span>{{ _(meta[0]) }}</span></span>
+{%- endmacro %}
+
+{% macro kind_badge(kind) -%}
+<span class="badge badge-kind">{{ icon(KIND_ICON.get(kind, 'hash')) }}<span>{{ _(KIND_LABEL.get(kind, kind)) }}</span></span>
+{%- endmacro %}
+
+{% macro copy_btn(text, label='', aria='', cls='') -%}
+<button type="button" class="btn btn-sm btn-ghost {{ cls }}" data-copy="{{ text }}" aria-label="{{ aria or _('Copy to clipboard') }}">{{ icon('copy') }}<span>{{ label or _('Copy') }}</span></button>
+{%- endmacro %}
+
+{% macro empty(icon_name, title, text='') -%}
+<div class="empty">
+  <div class="empty-icon">{{ icon(icon_name) }}</div>
+  <h3>{{ title }}</h3>
+  {% if text %}<p>{{ text }}</p>{% endif %}
+  {{ caller() if caller else '' }}
+</div>
+{%- endmacro %}
+
+{% macro skeleton(rows=3) -%}
+<div class="skeleton-stack" aria-hidden="true">
+  {% for i in range(rows) %}<div class="skeleton-card"><div class="skeleton" style="width:30%"></div><div class="skeleton" style="width:90%"></div><div class="skeleton" style="width:72%"></div></div>{% endfor %}
+</div>
+{%- endmacro %}
+
+{% macro page_header(title, subtitle='') -%}
+<header class="page-header">
+  <div>
+    <h1>{{ title }}</h1>
+    {% if subtitle %}<p class="page-sub">{{ subtitle }}</p>{% endif %}
+  </div>
+  <div class="page-actions">{{ caller() if caller else '' }}</div>
+</header>
+{%- endmacro %}
+
+{% macro kpi(label, value, icon_name, sub='') -%}
+<div class="card kpi">
+  <div class="kpi-head"><span class="kpi-icon">{{ icon(icon_name) }}</span><span class="kpi-label">{{ label }}</span></div>
+  <div class="kpi-value">{{ value }}</div>
+  {% if sub %}<div class="kpi-sub">{{ sub }}</div>{% endif %}
+</div>
+{%- endmacro %}
+
+{# Pager for HTMX results: prev/next links swap the #results container. #}
+{% macro pager(p, target='#results') -%}
+{% if p and p.first %}
+  {% set shown = _("Results {first}–{last} of {total}", first=p.first, last=p.last, total=p.total) if p.total else _("Results {first}–{last}", first=p.first, last=p.last) %}
+{% endif %}
+{% if p and (p.prev or p.next) %}
+<nav class="pager" aria-label="{{ _('Result pages') }}">
+  <span class="pager-info">{{ shown }}</span>
+  <span class="pager-btns">
+    {% if p.prev %}<a class="btn btn-sm" href="{{ p.prev }}" hx-get="{{ p.prev }}" hx-target="{{ target }}" hx-swap="outerHTML" hx-push-url="true" hx-indicator="#results-loading">{{ icon('chevron-left') }}<span>{{ _("Previous") }}</span></a>{% endif %}
+    {% if p.next %}<a class="btn btn-sm" href="{{ p.next }}" hx-get="{{ p.next }}" hx-target="{{ target }}" hx-swap="outerHTML" hx-push-url="true" hx-indicator="#results-loading"><span>{{ _("Next") }}</span>{{ icon('chevron-right') }}</a>{% endif %}
+  </span>
+</nav>
+{% elif p and p.first %}
+<p class="pager-info">{{ shown }}</p>
+{% endif %}
+{%- endmacro %}

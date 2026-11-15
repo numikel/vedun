@@ -1,0 +1,51 @@
+# vedun for end users: the installer saves this file as <install folder>/compose.yaml and the `vedun` launcher runs it.
+# Reachable only from this machine: http://127.0.0.1:${VEDUN_PORT:-8765}
+#
+# Secrets are never written to disk: `vedun start` reads them from the OS secret store and passes them to this
+# process only. An unset secret is passed as empty: protected routes then answer 503 (fail closed), /api/health stays open.
+# Folders next to this file: data/ (knowledge base, profile vedun.config.json, reports), pdf/ (source PDFs), notes/
+# (texts scanned for citations, read-only). They are yours: `vedun uninstall` never removes them without asking twice.
+name: vedun
+
+services:
+  vedun:
+    image: ${VEDUN_IMAGE:-ghcr.io/numikel/vedun:0.1}
+    init: true
+    restart: unless-stopped
+    # uid:gid the service runs as. The launcher sets it: Docker on Linux = your uid (files stay editable by you),
+    # rootless Podman = 0 (maps to your user on the host), Docker Desktop = the image's own user 10001.
+    user: "${VEDUN_UID:-10001}:${VEDUN_GID:-10001}"
+    ports:
+      - "127.0.0.1:${VEDUN_PORT:-8765}:8765"
+    read_only: true
+    tmpfs:
+      - /tmp
+    cap_drop:
+      - ALL
+    security_opt:
+      - no-new-privileges:true
+    environment:
+      OPENROUTER_API_KEY: ${OPENROUTER_API_KEY:-}
+      TYPESAFE_API_KEY: ${TYPESAFE_API_KEY:-}
+      VEDUN_API_KEY: ${VEDUN_API_KEY:-}
+      VEDUN_DASH_USER: ${VEDUN_DASH_USER:-}
+      VEDUN_DASH_PASSWORD: ${VEDUN_DASH_PASSWORD:-}
+      VEDUN_DAILY_BUDGET_USD: ${VEDUN_DAILY_BUDGET_USD:-3.0}
+      VEDUN_RATE_LIMIT_PER_MIN: ${VEDUN_RATE_LIMIT_PER_MIN:-60}
+      # how the host sees the folders, so agents on the host can open the files the API points to
+      VEDUN_HOST_ROOT: "${VEDUN_HOST_ROOT:-}"
+      VEDUN_HOST_PDF_DIR: "${VEDUN_HOST_PDF_DIR:-}"
+    volumes:
+      - ./data:/data/kb
+      - ./pdf:/data/pdf
+      - ./notes:/repo:ro
+      - vedun_hf:/hf # document-conversion models (~0.5 GB), downloaded on first use, safe to delete
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request,sys; sys.exit(0 if urllib.request.urlopen('http://127.0.0.1:8765/api/health', timeout=4).status == 200 else 1)"]
+      interval: 30s
+      timeout: 5s
+      start_period: 40s
+      retries: 3
+
+volumes:
+  vedun_hf:

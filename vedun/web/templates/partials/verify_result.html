@@ -1,0 +1,44 @@
+{% from "_macros.html" import icon, badge %}
+{% if chk is none %}
+  <div class="callout callout-warn">{{ icon('alert-triangle') }}<div>{{ message }}</div></div>
+{% else %}
+  <div class="verify-box {{ 'is-ok' if chk.match else 'is-bad' }}">
+    <div class="verify-head">
+      {% if chk.match %}
+        {{ badge(_('OK: matches the text and the PDF'), 'check-circle', 'ok') }}
+        <span>{{ _("The quote appears verbatim in this unit and in the text layer of the PDF.") }}</span>
+      {% else %}
+        {{ badge(_('NO MATCH: does not match'), 'alert-circle', 'danger') }}
+        <span>{{ _("Do not use this quote without correcting it.") }}</span>
+      {% endif %}
+    </div>
+    <ul class="verify-list">
+      <li>{{ icon('check-circle' if chk.in_unit else 'alert-circle') }}
+        {% set unit_ref %}<span class="mono">{{ chk.requested_ref }}</span>{% endset %}
+        {% set unit_answer %}<strong>{{ _('yes') if chk.in_unit else _('no') }}</strong>{% endset %}
+        <span>{{ _("In unit {ref}: {answer}", ref=unit_ref, answer=unit_answer) }}</span></li>
+      <li>
+        {% if chk.in_pdf is none %}{{ icon('help') }}
+          {% set pdf_answer %}<strong>{{ _("not checked") }}</strong>{% endset %}
+          <span>{{ _("In the PDF: {answer}", answer=pdf_answer) }}{% if chk.pdf_message %} ({{ chk.pdf_message }}){% endif %}</span>
+        {% else %}{{ icon('check-circle' if chk.in_pdf else 'alert-circle') }}
+          {% set pdf_answer %}<strong>{{ _('yes') if chk.in_pdf else _('no') }}</strong>{% endset %}
+          <span>{{ _("In the PDF text layer: {answer}", answer=pdf_answer) }}{% if chk.pdf_pages %} <span class="muted">({{ _("PDF page") }} {{ chk.pdf_pages|join(', ') }})</span>{% endif %}</span>{% endif %}
+      </li>
+    </ul>
+    {% if chk.pdf_message and chk.in_pdf is not none %}
+      <div class="callout callout-warn">{{ icon('alert-triangle') }}<div>{% if chk.pdf_message.startswith('WARNING') %}{{ _("The PDF file on disk differs from the indexed edition (SHA-256 checksum mismatch).") }}{% else %}{{ chk.pdf_message }}{% endif %}</div></div>
+    {% endif %}
+    {% if not chk.in_unit and chk.found_in_units %}
+      <p class="verify-line">{{ _("The quote appears in other units of this document:") }}
+        {% for uid in chk.found_in_units %}<a class="chip chip-link mono" href="/documents/{{ ds|urlencode }}?unit={{ uid|urlencode }}">{{ uid }}</a> {% endfor %}</p>
+    {% endif %}
+    {% if not chk.match and chk.closest %}
+      <div class="verify-closest">
+        <div class="ev-label">{{ _("Closest fragment in the document · similarity {pct}%", pct=(chk.closest_ratio * 100)|round|int) }}
+          {% if chk.closest_unit_id %}· <a class="mono" href="/documents/{{ ds|urlencode }}?unit={{ chk.closest_unit_id|urlencode }}">{{ chk.closest_unit_id }}</a>{% endif %}</div>
+        <blockquote class="quote">{{ chk.closest }}</blockquote>
+      </div>
+    {% endif %}
+  </div>
+{% endif %}

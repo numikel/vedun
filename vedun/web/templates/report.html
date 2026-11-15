@@ -1,0 +1,118 @@
+{% extends "base.html" %}
+{% import "_macros.html" as m %}
+{% block title %}{{ _("Report {name}", name=rep.name) }}{% endblock %}
+{% block content %}
+<nav class="crumbs" aria-label="{{ _('Breadcrumb') }}"><a href="/sync">{{ _("Sync") }}</a>{{ m.icon('chevron-right') }}<span class="mono">{{ rep.name }}</span></nav>
+
+{% call m.page_header(_("Report of changes between editions"), _("What changed after documents were replaced: numbers that disappeared or appeared, changed text and probable renumberings.")) %}
+  <span class="chip">{{ _("Generated:") }} <strong>{{ rep.generated or (rep.mtime|dt) }}</strong></span>
+{% endcall %}
+
+<section class="card report-summary" aria-label="{{ _('Summary') }}">
+  <dl class="meta-grid">
+    <div class="meta-wide"><dt>{{ _("Added documents") }}</dt><dd>{% for d in rep.added %}<a class="chip mono" href="#ds-{{ d }}">{{ doc_label(d) }}</a> {% else %}—{% endfor %}</dd></div>
+    <div class="meta-wide"><dt>{{ _("Replaced editions") }}</dt><dd>{% for d in rep.replaced %}<a class="chip mono" href="#ds-{{ d }}">{{ doc_label(d) }}</a> {% else %}—{% endfor %}</dd></div>
+    <div class="meta-wide"><dt>{{ _("Removed (no PDF)") }}</dt><dd>{% for d in rep.removed %}<a class="chip mono" href="#ds-{{ d }}">{{ doc_label(d) }}</a> {% else %}—{% endfor %}</dd></div>
+    <div><dt>{{ _("Unchanged") }}</dt><dd>{{ rep.unchanged }} {{ rep.unchanged|plural('document', 'documents') }}</dd></div>
+  </dl>
+  {% for w in rep.warnings %}<div class="callout callout-warn">{{ m.icon('alert-triangle') }}<div>{{ w }}</div></div>{% endfor %}
+</section>
+
+{% if not rep.sections %}
+<div class="card">{{ m.empty('file-text', _('The report contains no document sections'), _('This file has no document headings, or its format is unknown.')) }}</div>
+{% endif %}
+
+{% for sec in rep.sections %}
+<section class="card report-doc" id="ds-{{ sec.ds }}">
+  <div class="card-head">
+    <h2><span class="mono">{{ doc_label(sec.ds) }}</span>
+      {% if sec.kind == 'replaced' %}<span class="ed-change mono">{{ sec.old_edition or '?' }} {{ m.icon('arrow-right') }} {{ sec.new_edition }}</span>
+      {% elif sec.kind == 'new' %}<span class="ed-change mono">{{ sec.new_edition }}</span>{% endif %}
+    </h2>
+    {% if sec.kind == 'replaced' %}{{ m.badge(_('Edition replaced'), 'refresh', 'info') }}
+    {% elif sec.kind == 'new' %}{{ m.badge(_('New document'), 'plus', 'ok') }}
+    {% else %}{{ m.badge(_('Removed'), 'ban', 'muted') }}{% endif %}
+  </div>
+
+  {% if sec.kind != 'replaced' %}
+    <p>{{ sec.headline }}</p>
+    {% for n in sec.notes %}<div class="callout callout-warn">{{ m.icon('alert-triangle') }}<div class="mono small">{{ n }}</div></div>{% endfor %}
+  {% else %}
+  <ul class="stat-row">
+    <li><strong>{{ sec.n_gone }}</strong><span>{{ _("disappeared") }}</span></li>
+    <li><strong>{{ sec.n_new }}</strong><span>{{ _("new") }}</span></li>
+    <li><strong>{{ sec.n_changed }}</strong><span>{{ _("with changed text") }}</span></li>
+    <li><strong>{{ sec.n_renumbered }}</strong><span>{{ _("renumberings") }}</span></li>
+    <li><strong>{{ sec.n_possible }}</strong><span>{{ _("for manual review") }}</span></li>
+    <li><strong>{{ sec.n_unchanged }}</strong><span>{{ _("unchanged") }}</span></li>
+  </ul>
+
+  {% if sec.changed %}
+  <details class="rep-block" {{ 'open' if sec.changed|length <= 30 }}>
+    <summary>{{ m.icon('chevron-right', 'chev') }}<span>{{ _("Same number, changed text") }}</span><span class="count">{{ sec.changed|length }}</span></summary>
+    <p class="diff-legend"><del>{{ _("removed") }}</del> <ins>{{ _("added") }}</ins> <span class="muted">{{ _("(word-by-word comparison, unchanged fragments shortened to “…”)") }}</span></p>
+    <ul class="diff-list">
+      {% for c in sec.changed %}
+      <li><a class="mono strong" href="/documents/{{ sec.ds|urlencode }}?unit={{ c.unit_id|urlencode }}">{{ c.unit_id }}</a><div class="diff">{{ c.diff }}</div></li>
+      {% endfor %}
+    </ul>
+  </details>
+  {% endif %}
+
+  {% if sec.renumbered %}
+  <details class="rep-block" {{ 'open' if sec.renumbered|length <= 30 }}>
+    <summary>{{ m.icon('chevron-right', 'chev') }}<span>{{ _("Probable renumberings (old → new)") }}</span><span class="count">{{ sec.renumbered|length }}</span></summary>
+    <div class="table-scroll"><table class="table table-compact">
+      <thead><tr><th>{{ _("Old number") }}</th><th></th><th>{{ _("New number") }}</th><th>{{ _("Text similarity") }}</th><th>{{ _("Heading") }}</th></tr></thead>
+      <tbody>
+        {% for r in sec.renumbered %}
+        <tr><td class="mono">{{ r.old }}</td><td class="muted">{{ m.icon('arrow-right') }}</td>
+            <td><a class="mono strong" href="/documents/{{ sec.ds|urlencode }}?unit={{ r.new|urlencode }}">{{ r.new }}</a></td>
+            <td><span class="meter" role="img" aria-label="{{ (r.score*100)|round|int }}%"><span style="width: {{ (r.score*100)|round|int }}%"></span></span> <span class="mono">{{ (r.score*100)|round|int }}%</span></td>
+            <td>{{ r.heading }}</td></tr>
+        {% endfor %}
+      </tbody>
+    </table></div>
+  </details>
+  {% endif %}
+
+  {% if sec.possible %}
+  <details class="rep-block">
+    <summary>{{ m.icon('chevron-right', 'chev') }}<span>{{ _("Weaker candidates (for manual review)") }}</span><span class="count">{{ sec.possible|length }}</span></summary>
+    <div class="table-scroll"><table class="table table-compact">
+      <thead><tr><th>{{ _("Old number") }}</th><th></th><th>{{ _("New number") }}</th><th>{{ _("Text similarity") }}</th></tr></thead>
+      <tbody>
+        {% for r in sec.possible %}
+        <tr><td class="mono">{{ r.old }}</td><td class="muted">{{ m.icon('arrow-right') }}</td>
+            <td><a class="mono strong" href="/documents/{{ sec.ds|urlencode }}?unit={{ r.new|urlencode }}">{{ r.new }}</a></td>
+            <td><span class="meter meter-warn" role="img" aria-label="{{ (r.score*100)|round|int }}%"><span style="width: {{ (r.score*100)|round|int }}%"></span></span> <span class="mono">{{ (r.score*100)|round|int }}%</span></td></tr>
+        {% endfor %}
+      </tbody>
+    </table></div>
+  </details>
+  {% endif %}
+
+  <details class="rep-block" {{ 'open' if sec.gone and sec.gone|length <= 40 }}>
+    <summary>{{ m.icon('chevron-right', 'chev') }}<span>{{ _("Numbers that disappeared (no text match)") }}</span><span class="count">{{ sec.gone|length }}</span></summary>
+    {% if sec.gone %}<p class="chips">{% for i in sec.gone %}<span class="chip mono chip-del">{{ i }}</span>{% endfor %}</p>
+    {% else %}<p class="muted">{{ _("None. Every disappeared number was matched to a new one.") }}</p>{% endif %}
+  </details>
+
+  <details class="rep-block" {{ 'open' if sec.fresh and sec.fresh|length <= 40 }}>
+    <summary>{{ m.icon('chevron-right', 'chev') }}<span>{{ _("New numbers (no counterpart in the old edition)") }}</span><span class="count">{{ sec.fresh|length }}</span></summary>
+    {% if sec.fresh %}<p class="chips">{% for i in sec.fresh %}<a class="chip mono chip-ins" href="/documents/{{ sec.ds|urlencode }}?unit={{ i|urlencode }}">{{ i }}</a>{% endfor %}</p>
+    {% else %}<p class="muted">{{ _("None.") }}</p>{% endif %}
+  </details>
+
+  {% if sec.changes_text %}
+  <details class="rep-block" open>
+    <summary>{{ m.icon('chevron-right', 'chev') }}<span>{{ _("The document's own changes section (verbatim)") }}</span></summary>
+    <blockquote class="quote quote-long" lang="en">{{ sec.changes_text }}</blockquote>
+  </details>
+  {% endif %}
+
+  {% for n in sec.notes %}<div class="callout callout-warn">{{ m.icon('alert-triangle') }}<div class="mono small">{{ n }}</div></div>{% endfor %}
+  {% endif %}
+</section>
+{% endfor %}
+{% endblock %}

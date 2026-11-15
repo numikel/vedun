@@ -1,0 +1,30 @@
+{% import "_macros.html" as m %}
+{% macro node(n, ds) %}
+{% set opened = n.children is not none and n.children|length > 0 %}
+<li class="toc-node">
+  <div class="toc-row{% if n.active %} is-active{% endif %}">
+    {% if n.n_children %}
+      <button type="button" class="toc-toggle" aria-label="{{ _('Expand or collapse the sub-clauses of {id}', id=n.unit_id) }}" aria-expanded="{{ 'true' if opened else 'false' }}"
+        {% if n.children is none %}hx-get="/documents/{{ ds|urlencode }}/toc?prefix={{ n.unit_id|urlencode }}" hx-target="next .toc-children" hx-swap="innerHTML" hx-trigger="click once"{% endif %}>
+        {{ m.icon('chevron-right') }}
+      </button>
+    {% else %}<span class="toc-spacer" aria-hidden="true"></span>{% endif %}
+    <a class="toc-link" data-uid="{{ n.unit_id }}" href="/documents/{{ ds|urlencode }}?unit={{ n.unit_id|urlencode }}"
+       hx-get="/documents/{{ ds|urlencode }}/unit?ref={{ n.unit_id|urlencode }}" hx-target="#unit-viewer" hx-swap="innerHTML"
+       hx-push-url="/documents/{{ ds|urlencode }}?unit={{ n.unit_id|urlencode }}"{% if n.active %} aria-current="true"{% endif %}>
+      {% if n.kind != 'clause' %}<span class="toc-kind">{{ m.icon(KIND_ICON.get(n.kind, 'hash')) }}</span>{% endif %}
+      <span class="toc-id mono">{{ n.unit_id|replace('Table ', _('Tab.') ~ ' ')|replace('Figure ', _('Fig.') ~ ' ')|replace('Appendix ', _('App.') ~ ' ') }}</span>
+      <span class="toc-title">{{ n.title }}</span>
+    </a>
+  </div>
+  {% if n.n_children %}
+  <ul class="toc-children"{% if not opened %} hidden{% endif %}>
+    {% if opened %}{% for c in n.children %}{{ node(c, ds) }}{% endfor %}{% endif %}
+  </ul>
+  {% endif %}
+</li>
+{% endmacro %}
+{% set nodes_list = nodes if nodes is defined else tree %}
+{% set ds_val = ds if ds is defined else s.doc_id %}
+{% for n in nodes_list %}{{ node(n, ds_val) }}{% endfor %}
+{% if not nodes_list %}<li class="toc-empty">{{ _("No entries.") }}</li>{% endif %}

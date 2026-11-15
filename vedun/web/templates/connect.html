@@ -1,0 +1,67 @@
+{% extends "base.html" %}
+{% import "_macros.html" as m %}
+{% block title %}{{ _("MCP connection") }}{% endblock %}
+{% block content %}
+{{ m.page_header(_("MCP connection"), _("How to connect an AI assistant (Claude Code, Cursor, VS Code, Claude Desktop) to this database through the Model Context Protocol. The page never shows the API key: the configurations refer to an environment variable or prompt for the key.")) }}
+
+<section class="card" aria-labelledby="h-endpoint">
+  <div class="card-head">
+    <h2 id="h-endpoint">Endpoint</h2>
+    {% if mounted %}{{ m.badge(_('MCP server is running'), 'check-circle', 'ok') }}{% else %}{{ m.badge(_('MCP server unavailable'), 'alert-triangle', 'warn') }}{% endif %}
+  </div>
+  <dl class="kv">
+    <dt>{{ _("Address") }}</dt>
+    <dd><span class="mono">{{ mcp_url }}</span> {{ m.copy_btn(mcp_url, _('Copy'), _('Copy the MCP endpoint address')) }}</dd>
+    <dt>{{ _("Server name") }}</dt><dd class="mono">{{ server_name }}</dd>
+    <dt>Transport</dt><dd>{{ _("Streamable HTTP, POST only, sessionless (each request is independent)") }}</dd>
+    {% if protocol %}
+    {% set protocol_el %}<span class="mono">{{ protocol }}</span>{% endset %}
+    {% set handshake_el %}<span class="mono">initialize</span>{% endset %}
+    <dt>{{ _("Protocol") }}</dt><dd>{{ _("MCP {protocol}; older clients (the {handshake} handshake) work too", protocol=protocol_el, handshake=handshake_el) }}</dd>
+    {% endif %}
+    {% if version %}<dt>{{ _("Service version") }}</dt><dd class="mono">{{ version }}</dd>{% endif %}
+    <dt>{{ _("Authentication") }}</dt>
+    <dd>
+      {% set header_el %}<span class="mono">{{ key_header }}: &lt;{{ _("key") }}&gt;</span>{% endset %}
+      {% set bearer_el %}<span class="mono">Authorization: Bearer &lt;{{ _("key") }}&gt;</span>{% endset %}
+      {% set env_el %}<span class="mono">{{ key_env }}</span>{% endset %}
+      {{ _("Header {header} or {bearer}; the key is the value of the server variable {env}.", header=header_el, bearer=bearer_el, env=env_el) }}
+      {% if auth_ok %}{{ m.badge(_('Key is set on the server'), 'shield-check', 'ok') }}{% elif auth_ok is not none %}{{ m.badge(_('Key is not set: MCP answers 503'), 'alert-triangle', 'warn') }}{% endif %}
+    </dd>
+    <dt>{{ _("Scope") }}</dt><dd>{{ _("Read-only. Sync and administrative jobs are available only in this dashboard.") }}</dd>
+  </dl>
+  {% if not mounted %}<p class="hint">{{ _("The MCP module is not mounted in this instance. Details are in the server log (the “MCP not mounted” entry).") }}</p>{% endif %}
+</section>
+
+<section class="card" aria-labelledby="h-clients">
+  <div class="card-head"><h2 id="h-clients">{{ _("Client configuration") }}</h2></div>
+  <p class="hint">{{ _("Pick your client, copy the configuration and paste it into the place shown. Restart the client after changing the configuration.") }}</p>
+  {% for s in snippets %}
+  <details class="snippet"{% if loop.first %} open{% endif %}>
+    <summary><strong>{{ s.title }}</strong> <span class="row-sub">{{ s.where }}</span></summary>
+    <div class="snippet-body">
+      <div class="snippet-actions">{{ m.copy_btn(s.text, _('Copy the configuration'), _('Copy the configuration: {title}', title=s.title)) }}</div>
+      <pre class="log" tabindex="0" aria-label="{{ _('Configuration: {title}', title=s.title) }}">{{ s.text }}</pre>
+      {% if s.notes %}<ul class="snippet-notes">{% for n in s.notes %}<li>{{ n }}</li>{% endfor %}</ul>{% endif %}
+    </div>
+  </details>
+  {% endfor %}
+</section>
+
+<section class="card" aria-labelledby="h-tools">
+  <div class="card-head"><h2 id="h-tools">{{ _("Tools ({count})", count=tools|length) }}</h2></div>
+  {% if tools %}
+  <ul class="list-rows">
+    {% for t in tools %}
+    <li class="tool-row">
+      <span class="row-main"><span class="mono">{{ t.name }}</span><span class="row-sub">{{ t.title }}</span></span>
+      <span class="row-chips">{% if t.paid %}{{ m.badge(_('external API, daily budget'), 'wallet', 'warn') }}{% else %}{{ m.badge(_('local, no cost'), 'database', 'muted') }}{% endif %}</span>
+      <p class="tool-summary">{{ t.summary }}</p>
+    </li>
+    {% endfor %}
+  </ul>
+  {% else %}
+    {{ m.empty('plug', _('No tool list'), _('The MCP server module is not available in this instance.')) }}
+  {% endif %}
+</section>
+{% endblock %}

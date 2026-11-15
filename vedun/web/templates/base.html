@@ -1,0 +1,77 @@
+<!doctype html>
+{% import "_macros.html" as m %}
+<html lang="{{ lang }}">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>{% block title %}{% endblock %} · vedun</title>
+  <meta name="color-scheme" content="light dark">
+  <meta name="htmx-config" content='{"includeIndicatorStyles": false, "allowEval": false, "allowScriptTags": false, "defaultSwapStyle": "innerHTML"}'>
+  <script>
+    /* Apply the stored theme before first paint (no flash). Storage may be blocked: ignore. */
+    (function () {
+      try {
+        var t = localStorage.getItem("vedun-theme");
+        if (t === "dark" || t === "light") document.documentElement.setAttribute("data-theme", t);
+      } catch (e) {}
+    })();
+  </script>
+  {# Translations of the strings app.js shows: {English source: translation}; empty for English. #}
+  <script type="application/json" id="i18n-strings">{{ js_i18n|tojson }}</script>
+  <link rel="stylesheet" href="{{ static('css/app.css') }}">
+  <script src="{{ static('vendor/htmx.min.js') }}" defer></script>
+  <script src="{{ static('js/app.js') }}" defer></script>
+</head>
+<body>
+{% include "_icons.html" %}
+<a class="skip-link" href="#main">{{ _("Skip to content") }}</a>
+<div class="shell">
+  <aside class="sidebar" aria-label="{{ _('Main navigation') }}">
+    <a class="brand" href="/" aria-label="{{ _('vedun, home page') }}">
+      <span class="brand-mark">{{ m.icon('eye') }}</span>
+      <span class="brand-text"><strong>vedun</strong><small>{{ corpus_name() }}</small></span>
+    </a>
+    <nav class="nav">
+      {% for key, href, label, ico in NAV %}
+      <a class="nav-link{% if active == key %} is-active{% endif %}" href="{{ href }}"{% if active == key %} aria-current="page"{% endif %} title="{{ _(label) }}">
+        {{ m.icon(ico) }}<span class="nav-label">{{ _(label) }}</span>
+      </a>
+      {% endfor %}
+    </nav>
+    <div class="sidebar-foot">
+      <div class="lang-switch" role="group" aria-label="{{ _('Interface language') }}">
+        <span class="lang-icon">{{ m.icon('globe') }}</span>
+        {% for code in UI_LANGUAGES %}
+        <a class="lang-opt{% if lang == code %} is-active{% endif %}" href="{{ lang_links[code] }}" data-lang="{{ code }}" lang="{{ code }}" hreflang="{{ code }}"{% if lang == code %} aria-current="true"{% endif %} title="{{ LANG_NAMES.get(code, code) }}"><span aria-hidden="true">{{ code|upper }}</span><span class="sr-only">{{ LANG_NAMES.get(code, code) }}</span></a>
+        {% endfor %}
+      </div>
+      <button type="button" class="btn btn-ghost theme-toggle" data-theme-toggle aria-label="{{ _('Switch between light and dark theme') }}" title="{{ _('Switch theme') }}">
+        <span class="theme-icon theme-icon-light">{{ m.icon('sun') }}</span>
+        <span class="theme-icon theme-icon-dark">{{ m.icon('moon') }}</span>
+        <span class="nav-label" data-theme-label>{{ _("Theme") }}</span>
+      </button>
+      <p class="sidebar-note nav-label">{{ _("Local data. Cite only what the database returns.") }}</p>
+    </div>
+  </aside>
+
+  <main id="main" class="main" tabindex="-1">
+    {% block content %}{% endblock %}
+  </main>
+</div>
+
+<div id="toast" class="toast" role="status" aria-live="polite"></div>
+
+<dialog id="lightbox" class="lightbox" aria-label="{{ _('Image preview') }}">
+  <div class="lightbox-bar">
+    <div class="lightbox-title" id="lightbox-title"></div>
+    <div class="lightbox-actions">
+      <button type="button" class="btn btn-sm" id="lightbox-page" hidden>{{ m.icon('file-text') }}<span>{{ _("Show page") }}</span></button>
+      <button type="button" class="btn btn-sm" id="lightbox-figure" hidden>{{ m.icon('image') }}<span>{{ _("Show figure") }}</span></button>
+      <a class="btn btn-sm" id="lightbox-unit" href="#" hidden>{{ m.icon('external-link') }}<span>{{ _("Open unit") }}</span></a>
+      <button type="button" class="btn btn-sm btn-icon" id="lightbox-close" aria-label="{{ _('Close preview') }}">{{ m.icon('x') }}</button>
+    </div>
+  </div>
+  <div class="lightbox-body"><img id="lightbox-img" alt=""><div class="lightbox-spinner" id="lightbox-spinner">{{ m.icon('loader', 'spin') }}<span>{{ _("Loading image…") }}</span></div></div>
+</dialog>
+</body>
+</html>

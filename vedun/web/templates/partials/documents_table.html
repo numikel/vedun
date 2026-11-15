@@ -1,0 +1,53 @@
+{% import "_macros.html" as m %}
+<section id="documents-table" class="card" aria-live="polite">
+  {% if not cat_available and total %}
+  {% set refresh_link %}<a href="/sync">{{ _("Refresh the catalog") }}</a>{% endset %}
+  <div class="callout callout-info">{{ m.icon('info') }}<div>{{ _("The status against {source} is unknown because the catalog has not been fetched yet. {link}.", link=refresh_link, source=source_name()) }}</div></div>
+  {% endif %}
+  {% if rows %}
+  <div class="table-scroll">
+    <table class="table table-documents">
+      <thead>
+        <tr>
+          {% macro th(col, label, cls='') %}
+          <th class="{{ cls }}" aria-sort="{{ ('descending' if desc else 'ascending') if sort == col else 'none' }}">
+            <a class="th-sort{% if sort == col %} is-active{% endif %}" href="{{ sort_urls[col] }}" hx-get="{{ sort_urls[col] }}" hx-target="#documents-table" hx-swap="outerHTML" hx-push-url="true">
+              <span>{{ label }}</span>{{ m.icon('arrow-up-down') }}
+            </a>
+          </th>
+          {% endmacro %}
+          {{ th('ds', _('Number')) }}
+          {{ th('title', _('Title')) }}
+          {{ th('edition', _('Edition')) }}
+          {{ th('clause', _('Clauses'), 'num') }}
+          {{ th('table', _('Tables'), 'num') }}
+          {{ th('figure', _('Figures'), 'num') }}
+          {{ th('status', _('Status per {source}', source=source_name())) }}
+        </tr>
+      </thead>
+      <tbody>
+        {% for r in rows %}
+        <tr{% if not r.local %} class="row-muted"{% endif %}>
+          <td>{% if r.local %}<a class="mono strong" href="/documents/{{ r.ds|urlencode }}">{{ r.ds }}</a>{% else %}<span class="mono">{{ r.ds }}</span>{% endif %}</td>
+          <td>{% if r.local %}<a class="cell-title" href="/documents/{{ r.ds|urlencode }}">{{ r.title }}</a>{% else %}{{ r.title or '—' }}{% endif %}</td>
+          <td class="nowrap">{{ r.edition_label or '—' }}{% if r.latest and r.status == 'outdated' %}<div class="row-sub">{{ _("on {source}: {edition}", edition=r.latest, source=source_name()) }}</div>{% endif %}</td>
+          <td class="num">{{ r.clause|num if r.local else '—' }}</td>
+          <td class="num">{{ r.table|num if r.local else '—' }}</td>
+          <td class="num">{{ r.figure|num if r.local else '—' }}</td>
+          <td>{{ m.catalog_badge(r.status) }}</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  <p class="table-foot">{{ rows|length }} {{ _("of") }} {{ total }} {{ total|plural('document', 'documents', key='of-document') }}</p>
+  {% elif total %}
+    {% call m.empty('search', _('No documents match the filter'), _('Change the phrase or clear the status filter.')) %}
+      <a class="btn" href="/documents">{{ _("Clear filters") }}</a>
+    {% endcall %}
+  {% else %}
+    {% call m.empty('library', _('The database has no documents yet'), _('Add PDF files on the Sync page. The documents will appear here once processed.')) %}
+      <a class="btn btn-primary" href="/sync">{{ _("Go to sync") }}</a>
+    {% endcall %}
+  {% endif %}
+</section>

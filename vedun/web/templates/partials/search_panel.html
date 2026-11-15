@@ -1,0 +1,132 @@
+{% import "_macros.html" as m %}
+<div id="search-panel">
+  <div class="tabs" role="tablist" aria-label="{{ _('Search type') }}">
+    {% for key, label in modes %}
+    {% set tab_url = url_with('/search', {}, mode=key, ds=form.ds, kind=form.kind, q=(form.q if key != 'lookup' else ''), ref=(form.ref if key == 'lookup' else '')) %}
+    <a role="tab" class="tab" aria-selected="{{ 'true' if form.mode == key else 'false' }}" href="{{ tab_url }}"
+       hx-get="{{ tab_url }}" hx-target="#search-panel" hx-swap="outerHTML" hx-push-url="true">
+      {{ m.icon({'lookup': 'hash', 'fulltext': 'file-text', 'hybrid': 'layers'}[key]) }}<span>{{ _(label) }}</span>
+    </a>
+    {% endfor %}
+  </div>
+
+  <section class="card search-card" aria-label="{{ _('Search form') }}">
+    <form class="search-form" action="/search" method="get"
+          hx-get="/search" hx-target="#results" hx-swap="outerHTML" hx-push-url="true" hx-indicator="#results-loading">
+      <input type="hidden" name="mode" value="{{ form.mode }}">
+
+      {% if form.mode == 'lookup' %}
+      <div class="form-row">
+        <div class="field">
+          <label for="f-ds">{{ _("Document number") }}</label>
+          <input id="f-ds" class="input mono" name="ds" value="{{ form.ds }}" list="ds-list" placeholder="3-26" autocomplete="off" inputmode="text">
+          <datalist id="ds-list">{% for s in sheets %}<option value="{{ s.doc_id }}">{{ s.title }}</option>{% endfor %}</datalist>
+        </div>
+        <div class="field grow">
+          <label for="f-ref">{{ _("Clause, table or figure number") }}</label>
+          <input id="f-ref" class="input mono" name="ref" value="{{ form.ref }}" placeholder="{{ _('Section 2.3.1 · Table 2.1.1 · Fig. 2.1.1') }}" autocomplete="off">
+        </div>
+        <div class="field field-btn"><button class="btn btn-primary" type="submit">{{ m.icon('search') }}<span>{{ _("Find") }}</span></button></div>
+      </div>
+      <div class="form-row form-row-opts">
+        <label class="check"><input type="checkbox" name="children" value="1" {{ 'checked' if form.children }}><span>{{ _("Show sub-units") }}</span></label>
+        <label class="check"><input type="checkbox" name="neighbors" value="1" {{ 'checked' if form.neighbors }}><span>{{ _("Show neighboring numbers") }}</span></label>
+        <span class="hint">{{ _("Accepted prefixes: {prefixes}. Separate several numbers with a semicolon. Numbers are never guessed.", prefixes=LOOKUP_PREFIXES) }}</span>
+      </div>
+
+      {% else %}
+      <div class="form-row">
+        <div class="field grow">
+          <label for="f-q">{{ _('Full-text query') if form.mode == 'fulltext' else _('Question or phrase (PL or EN)') }}</label>
+          <div class="input-icon">{{ m.icon('search') }}<input id="f-q" class="input {{ 'mono' if form.mode == 'fulltext' and form.syntax == 'fts5' }}" type="search" name="q" value="{{ form.q }}" autocomplete="off"
+            placeholder="{{ '"permanently connected" NOT hybrid' if form.mode == 'fulltext' else _('maximum storage height') }}"></div>
+        </div>
+        <div class="field field-btn"><button class="btn btn-primary" type="submit">{{ m.icon('search') }}<span>{{ _("Search") }}</span></button></div>
+      </div>
+
+      <div class="form-row">
+        <div class="field">
+          <label for="f-ds2">{{ _("Document") }}</label>
+          <select id="f-ds2" class="select" name="ds">
+            <option value="">{{ _("All documents") }}</option>
+            {% for s in sheets %}<option value="{{ s.doc_id }}" {{ 'selected' if form.ds == s.doc_id }}>{{ doc_label(s.doc_id) }} · {{ s.title|truncate(34, true, '…') }}</option>{% endfor %}
+          </select>
+        </div>
+        <div class="field">
+          <label for="f-kind">{{ _("Unit kind") }}</label>
+          <select id="f-kind" class="select" name="kind">
+            {% for val, label in kind_options %}<option value="{{ val }}" {{ 'selected' if form.kind == val }}>{{ _(label) }}</option>{% endfor %}
+          </select>
+        </div>
+
+        {% if form.mode == 'fulltext' %}
+        <fieldset class="field segmented">
+          <legend>{{ _("Syntax") }}</legend>
+          <label class="seg"><input type="radio" name="syntax" value="safe" {{ 'checked' if form.syntax == 'safe' }}><span>{{ _("Safe") }}</span></label>
+          <label class="seg"><input type="radio" name="syntax" value="fts5" {{ 'checked' if form.syntax == 'fts5' }}><span>{{ _("FTS5 (advanced)") }}</span></label>
+        </fieldset>
+        {% else %}
+        <div class="field">
+          <label for="f-rr">Reranker</label>
+          <select id="f-rr" class="select" name="rerank">
+            {% for val, label in rerankers %}<option value="{{ val }}" {{ 'selected' if form.rerank == val }}>{{ _(label) }}</option>{% endfor %}
+          </select>
+        </div>
+        {% endif %}
+      </div>
+
+      {% if form.mode == 'hybrid' %}
+      <div class="form-row form-row-weights">
+        <div class="field grow">
+          <label for="f-w">{{ _("BM25 weight relative to vectors") }}</label>
+          <div class="slider">
+            <span class="slider-end">{{ _("vectors only") }}</span>
+            <input id="f-w" type="range" name="w_fts" min="0" max="1" step="0.05" value="{{ '%.2f'|format(form.w_fts) }}" data-weight-slider aria-describedby="w-out">
+            <span class="slider-end">{{ _("BM25 only") }}</span>
+          </div>
+          <div class="weights" id="w-out" aria-live="polite">
+            <span class="chip">BM25 <strong class="mono" data-w-fts>{{ ('%.2f'|format(form.w_fts))|dec }}</strong></span>
+            <span class="chip">{{ _("Vectors") }} <strong class="mono" data-w-vec>{{ ('%.2f'|format(1 - form.w_fts))|dec }}</strong></span>
+            <span class="hint">{{ _("The weights add up to 1. On an English corpus with Polish questions a BM25 weight of about 0.3–0.4 works better.") }}</span>
+          </div>
+        </div>
+        <div class="field">
+          <span class="field-label" id="f-fig-l">{{ _("Figures") }}</span>
+          <input type="hidden" name="figures" value="0">
+          <label class="switch" aria-labelledby="f-fig-l"><input type="checkbox" name="figures" value="1" {{ 'checked' if form.figures }}><span class="switch-track" aria-hidden="true"></span><span>{{ _("Include figures") }}</span></label>
+        </div>
+      </div>
+      {% endif %}
+
+      {% if form.mode == 'fulltext' %}
+      <details class="syntax-help">
+        <summary>{{ m.icon('info') }}<span>{{ _("Query syntax") }}</span></summary>
+        <div class="syntax-grid">
+          <div>
+            <h4>{{ _("Safe") }}</h4>
+            <p>{{ _("Words are joined with AND by default. A quoted phrase is taken literally. Special characters do not break the query.") }}</p>
+            <p class="mono">weigh cylinders</p>
+          </div>
+          <div>
+            <h4>{{ _("FTS5 (advanced)") }}</h4>
+            <table class="table table-compact">
+              <tbody>
+                <tr><td class="mono">"exact phrase"</td><td>{{ _("exact phrase") }}</td></tr>
+                <tr><td class="mono">cylind*</td><td>{{ _("prefix (cylinder, cylinders…)") }}</td></tr>
+                <tr><td class="mono">a AND b · a OR b · a NOT b</td><td>{{ _("logical operators (in capitals)") }}</td></tr>
+                <tr><td class="mono">NEAR("inert" "gas", 5)</td><td>{{ _("words within 5 words of each other") }}</td></tr>
+              </tbody>
+            </table>
+            {% set number_example %}<span class="mono">2.3.1</span>{% endset %}
+            <p class="hint">{{ _("An invalid expression does not crash anything, it just shows the parser message. Numbers such as {number} are treated as a phrase.", number=number_example) }}</p>
+          </div>
+        </div>
+      </details>
+      {% endif %}
+      {% endif %}
+    </form>
+  </section>
+
+  <div id="results-loading" class="htmx-indicator" aria-hidden="true">{{ m.skeleton(2) }}</div>
+  {% include "partials/search_results.html" %}
+</div>

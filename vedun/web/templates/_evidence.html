@@ -1,0 +1,114 @@
+{# Evidence card: one unit of a document with verbatim text, citation and provenance. #}
+{% from "_macros.html" import icon, kind_badge %}
+
+{% macro evidence_card(ev, rank=none, dom='', duplicate=false) %}
+{% set r = ev.retrieval %}
+{% set uid = ('ev-' ~ ev.doc_id ~ '-' ~ ev.unit_id ~ '-' ~ dom)|replace(' ', '_')|replace('.', '_') %}
+{% set locator = ev.citation_pl.split(', ')[-1] %}
+<article class="card ev ev-{{ ev.unit_kind }}{% if r.match_type == 'exact' %} ev-exact{% endif %}" id="{{ uid }}">
+  <header class="ev-head">
+    <div class="ev-id">
+      {% if rank %}<span class="ev-rank" title="{{ _('Position in the results') }}"><span class="sr-only">{{ _("Position") }} </span>{{ rank }}</span>{% endif %}
+      {{ kind_badge(ev.unit_kind) }}
+      <a class="chip chip-ds mono" href="/documents/{{ ev.doc_id|urlencode }}" title="{{ ev.document_title }}">{{ doc_label(ev.doc_id) }}</a>
+      <a class="ev-unit mono" href="/documents/{{ ev.doc_id|urlencode }}?unit={{ ev.unit_id|urlencode }}">{{ locator }}</a>
+      {% if r.match_type == 'exact' %}<span class="badge badge-accent">{{ icon('check') }}<span>{{ _("Exact match by number") }}</span></span>{% endif %}
+      {% if duplicate %}<span class="badge badge-warn">{{ icon('alert-triangle') }}<span>{{ _("Number repeated in the source") }}</span></span>{% endif %}
+    </div>
+    <h3 class="ev-title">{{ ev.title or ev.document_title }}</h3>
+    {% if ev.parent_path %}
+    <nav class="ev-crumbs" aria-label="{{ _('Location in the document') }}">
+      <ol>
+        <li><a href="/documents/{{ ev.doc_id|urlencode }}">{{ doc_label(ev.doc_id) }}</a></li>
+        {% for p in ev.parent_path %}
+        <li><a href="/documents/{{ ev.doc_id|urlencode }}?unit={{ p.unit_id|urlencode }}" title="{{ p.unit_id }} {{ p.title }}"><span class="mono">{{ p.unit_id }}</span>{% if p.title %} {{ p.title|truncate(34, true, '…') }}{% endif %}</a></li>
+        {% endfor %}
+      </ol>
+    </nav>
+    {% endif %}
+  </header>
+
+  <div class="ev-cite">
+    <div class="ev-cite-row">
+      <code class="cite" lang="pl">{{ ev.citation_pl }}</code>
+      <button type="button" class="btn btn-sm" data-copy="{{ ev.citation_pl }}" aria-label="{{ _('Copy the Polish citation') }}">{{ icon('copy') }}<span>{{ _("Copy PL") }}</span></button>
+    </div>
+    <div class="ev-cite-row ev-cite-en">
+      <code class="cite" lang="en">{{ ev.citation_en }}</code>
+      <button type="button" class="btn btn-sm btn-ghost" data-copy="{{ ev.citation_en }}" aria-label="{{ _('Copy the English citation') }}">{{ icon('copy') }}<span>{{ _("Copy EN") }}</span></button>
+    </div>
+  </div>
+
+  {% if ev.figure_png %}
+  <a class="ev-figure" href="{{ fig_url(ev.doc_id, ev.unit_id) }}" data-lightbox
+     data-caption="{{ ev.unit_id }}{% if ev.title %}: {{ ev.title }}{% endif %}"
+     data-fig-src="{{ fig_url(ev.doc_id, ev.unit_id) }}"
+     data-page-src="{{ page_url(ev.doc_id, ev.page_start) if ev.page_start else '' }}"
+     data-unit-href="/documents/{{ ev.doc_id|urlencode }}?unit={{ ev.unit_id|urlencode }}">
+    <img loading="lazy" src="{{ fig_url(ev.doc_id, ev.unit_id) }}" alt="{{ ev.unit_id }}: {{ ev.title }}">
+    <span class="ev-figure-hint">{{ icon('maximize') }}<span>{{ _("Enlarge") }}</span></span>
+  </a>
+  {% endif %}
+
+  <div class="ev-body">
+    {% if ev.snippet and ev.text_chars > 600 %}
+    <p class="ev-snippet"><span class="ev-label">{{ _("Matched fragment") }}</span>{{ ev.snippet|snip }}</p>
+    {% endif %}
+    <div class="ev-label">{{ _("Original text (verbatim)") }}</div>
+    <div class="ev-text" data-clamp>{{ ev|evtext }}</div>
+    <button type="button" class="link-btn js-expand" hidden aria-expanded="false">{{ _("Show all") }}</button>
+    {% if ev.text_truncated %}
+    {% set full_link %}<a href="/documents/{{ ev.doc_id|urlencode }}?unit={{ ev.unit_id|urlencode }}">{{ _("Open the full text") }}</a>{% endset %}
+    <p class="hint">{{ _("Showing {shown} of {total} characters. {link}.", shown=ev.text|length|num, total=ev.text_chars|num, link=full_link) }}</p>
+    {% endif %}
+  </div>
+
+  {% if r.match_type in ('search', 'exact') and r.final_ranker %}
+  <details class="ev-why">
+    <summary>{{ icon('info') }}<span>{{ _("Why this result") }}</span><span class="ev-why-sum mono">{{ r.final_ranker }}</span></summary>
+    <div class="why-body">
+      {% if r.match_type == 'exact' %}
+        <p>{{ _("The document and clause number was recognized in the query, so the unit is placed first without using vectors or the reranker.") }}</p>
+      {% endif %}
+      <dl class="why-grid">
+        <div><dt>{{ _("Final method") }}</dt><dd>{{ r.final_ranker|ranker }} <span class="mono muted">({{ r.final_ranker }})</span></dd></div>
+        {% if r.final_rank %}<div><dt>{{ _("Position") }}</dt><dd class="mono">{{ r.final_rank }}</dd></div>{% endif %}
+        {% if r.bm25 is not none %}<div><dt>BM25</dt><dd class="mono">{{ r.bm25|score(3) }}{% if r.bm25_rank %} <span class="muted">· {{ _("rank {n}", n=r.bm25_rank) }}</span>{% endif %}</dd></div>{% endif %}
+        {% for model, v in r.vector.items() %}
+        <div><dt>{{ _("Vectors {model}", model=model) }}</dt><dd class="mono">{{ _("similarity {value}", value=v.similarity|score(3)) }} <span class="muted">· {{ _("distance {value}", value=v.distance|score(3)) }} · {{ _("rank {n}", n=v.rank) }}</span></dd></div>
+        {% endfor %}
+        {% if r.rrf is not none %}<div><dt>{{ _("RRF (fusion)") }}</dt><dd class="mono">{{ r.rrf|score(5) }} <span class="muted">· {{ _("weights BM25 {w_fts} / vectors {w_vec}", w_fts=r.w_fts|score(2), w_vec=r.w_vec|score(2)) }}</span></dd></div>{% endif %}
+        {% for key, v in r.rerank.items() %}
+        <div><dt>Reranker {{ RERANK_NAME.get(key, key) }}</dt><dd class="mono">{{ v|score(4) }}</dd></div>
+        {% endfor %}
+      </dl>
+      {% if r.rerank_error %}
+      {% set err %}<span class="mono">{{ r.rerank_error }}</span>{% endset %}
+      <div class="callout callout-warn">{{ icon('alert-triangle') }}<div>{{ _("The reranker reported an error, the fusion order was kept: {error}", error=err) }}</div></div>
+      {% endif %}
+    </div>
+  </details>
+  {% endif %}
+
+  <footer class="ev-foot">
+    <span title="{{ ev.edition }}">{{ _("Edition:") }} <strong>{{ ev.edition_label or ev.edition }}</strong></span>
+    {% if ev.md_line_start %}<span class="mono">md:{{ ev.md_line_start }}–{{ ev.md_line_end }}</span>{% endif %}
+    {% if ev.page_start %}<button type="button" class="link-btn" data-lightbox-page="{{ page_url(ev.doc_id, ev.page_start) }}" data-caption="{{ doc_label(ev.doc_id) }} · {{ locator }} · {{ _('PDF page') }}">{{ _("show PDF page") }}</button>{% endif %}
+  </footer>
+
+  <details class="ev-verify">
+    <summary>{{ icon('shield-check') }}<span>{{ _("Check a quote") }}</span></summary>
+    <form class="verify-form" hx-post="/verify" hx-target="next .verify-result" hx-swap="innerHTML" hx-disabled-elt="find button[type=submit]" hx-indicator="find .verify-spin">
+      <input type="hidden" name="ds" value="{{ ev.doc_id }}">
+      <input type="hidden" name="ref" value="{{ ev.unit_id }}">
+      <label class="sr-only" for="{{ uid }}-q">{{ _("Quote to check") }}</label>
+      <textarea id="{{ uid }}-q" class="textarea" name="quote" rows="3" placeholder="{{ _('Paste a quote from the document (in English, verbatim) to check it against this unit and the PDF…') }}"></textarea>
+      <div class="verify-actions">
+        <button type="submit" class="btn btn-primary btn-sm">{{ icon('shield-check') }}<span>{{ _("Check") }}</span></button>
+        <span class="verify-spin htmx-indicator">{{ icon('loader', 'spin') }}<span>{{ _("Checking the text and the PDF…") }}</span></span>
+      </div>
+    </form>
+    <div class="verify-result" aria-live="polite"></div>
+  </details>
+</article>
+{% endmacro %}

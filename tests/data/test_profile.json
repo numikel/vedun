@@ -1,0 +1,91 @@
+{
+  "w_fts": 0.4,
+  "w_vec": 0.6,
+  "rrf_k": 60,
+  "rerank_candidates": 30,
+  "reranker": "r3",
+  "text_models": [
+    "i1"
+  ],
+  "image_models": [
+    "i1"
+  ],
+  "default_text_model": "i1",
+  "default_image_model": "i1",
+  "doc_id_pattern": "\\d{1,2}-\\d{1,3}[A-Z]?",
+  "citation_prefix_pattern": "(?:ACME\\s+)?(?:Safety\\s+)?(?:ASC|Code\\s*Parts?|arkusz\\w*(?:\\s+ACME)?(?:\\s+ASC)?)",
+  "boilerplate_patterns": [
+    "^ACME Safety Code, internal use\\.?$",
+    "^©\\s*\\d{4}.*ACME Safety Council.*$"
+  ],
+  "clause_ref_words": [
+    "Section",
+    "Sections",
+    "Clause",
+    "Clauses",
+    "Paragraph",
+    "Table",
+    "Tables",
+    "Figure",
+    "Figures",
+    "Fig.",
+    "Appendix",
+    "Annex",
+    "Chapter",
+    "Item",
+    "Step",
+    "Note",
+    "No.",
+    "see",
+    "See",
+    "in",
+    "of",
+    "per",
+    "and",
+    "or",
+    "to",
+    "with",
+    "under",
+    "Code Part",
+    "Code Parts",
+    "ASC",
+    "ISO"
+  ],
+  "value_units": [
+    "MMBtu",
+    "Btu",
+    "MW",
+    "MJ",
+    "GJ",
+    "MPa",
+    "kPa",
+    "kW"
+  ],
+  "fast_table_documents": [
+    "2-89"
+  ],
+  "corpus_name": "ACME Safety Code",
+  "ui_language": "pl",
+  "doc_label": "ASC {doc_id}",
+  "citation_template": {
+    "pl": "ASC {doc_id} „{title}” ({edition}), {locator}",
+    "en": "ASC {doc_id} \"{title}\" ({edition}), {locator}"
+  },
+  "edition_label": {
+    "pages": 2,
+    "original": "{MONTH}",
+    "revision": "(?:Amended(?: [Rr]evision)?|Reissued) {MONTH}",
+    "original_in_history": "^({MONTH})\\. This code was fully revised"
+  },
+  "title_strip_patterns": [
+    "^ASC\\s+{doc_id}\\s+",
+    "\\s*\\(Code Part\\)\\s*$"
+  ],
+  "changes_unit_id": "1.2",
+  "rerank_instruction": "Given a workplace-safety question, rank ACME Safety Code clauses that state the applicable requirement, value or condition highest",
+  "models": {
+    "t1": {
+      "query_template": "Instruct: Given a question about workplace safety requirements, retrieve the ACME Safety Code clause that answers it\nQuery:{q}"
+    }
+  }
+}

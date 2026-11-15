@@ -1,0 +1,15 @@
+{
+  "corpus_name": "My standards library",
+  "doc_id_pattern": "\\d{1,2}-\\d{1,3}[A-Z]?",
+  "doc_label": "Doc {doc_id}",
+  "citation_template": {
+    "en": "Doc {doc_id} \"{title}\" ({edition}), {locator}"
+  },
+  "reranker": null,
+  "text_models": [
+    "i1"
+  ],
+  "image_models": [
+    "i1"
+  ]
+}

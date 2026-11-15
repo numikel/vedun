@@ -1,0 +1,31 @@
+{% extends "base.html" %}
+{% import "_macros.html" as m %}
+{% block title %}{{ _("Documents") }}{% endblock %}
+{% block content %}
+{{ m.page_header(_("Documents"), _("All documents in the database, with their edition and status against {source}.", source=source_name())) }}
+
+<form class="card toolbar" id="documents-filter" action="/documents" method="get"
+      hx-get="/documents" hx-target="#documents-table" hx-swap="outerHTML" hx-push-url="true"
+      hx-trigger="input changed delay:250ms from:#documents-q, change from:#documents-status, submit"
+      hx-indicator="#documents-loading">
+  <div class="field grow">
+    <label for="documents-q">{{ _("Filter by number or title") }}</label>
+    <div class="input-icon">{{ m.icon('search') }}<input id="documents-q" class="input" type="search" name="q" value="{{ q }}" placeholder="{{ _('e.g. a number or a word from the title') }}" autocomplete="off"></div>
+  </div>
+  <div class="field">
+    <label for="documents-status">{{ _("Status against {source}", source=source_name()) }}</label>
+    <select id="documents-status" class="select" name="status">
+      <option value="">{{ _("All") }}</option>
+      {% for key in ['current','outdated','missing_locally','withdrawn'] %}
+      <option value="{{ key }}" {{ 'selected' if status == key }}>{{ _(STATUS_META[key][0]) }}{% if cat_available %} ({{ status_counts.get(key, 0) }}){% endif %}</option>
+      {% endfor %}
+    </select>
+  </div>
+  <input type="hidden" name="sort" value="{{ sort }}">
+  <input type="hidden" name="dir" value="{{ 'desc' if desc else '' }}">
+  <noscript><button class="btn btn-primary" type="submit">{{ _("Filter") }}</button></noscript>
+</form>
+
+<div id="documents-loading" class="htmx-indicator loading-bar" aria-hidden="true"><span></span></div>
+{% include "partials/documents_table.html" %}
+{% endblock %}

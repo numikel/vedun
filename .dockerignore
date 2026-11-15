@@ -1,0 +1,21 @@
+# Build context = the code and the lock file only. Data is mounted at run time (see compose.yaml).
+.venv/
+.git/
+.state/
+.staging/
+.pytest_cache/
+.ruff_cache/
+**/__pycache__/
+**/*.pyc
+md/
+figures/
+reports/
+tests/
+README.md
+compose.yaml
+Dockerfile
+.dockerignore
+.env
+*.db
+*.db-*
+*.bak

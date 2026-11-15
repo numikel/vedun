@@ -1,0 +1,27 @@
+{% from "_macros.html" import icon, job_badge, empty %}
+{% set any_active = jobs|selectattr('active')|list|length > 0 %}
+<div id="job-history"{% if any_active %} hx-get="/sync/jobs" hx-trigger="every 4s" hx-swap="outerHTML"{% endif %}>
+{% if jobs %}
+  <div class="table-scroll">
+    <table class="table">
+      <thead><tr><th>{{ _("Job") }}</th><th>{{ _("Status") }}</th><th>{{ _("Start") }}</th><th>{{ _("Duration") }}</th><th>{{ _("Message") }}</th><th><span class="sr-only">{{ _("Actions") }}</span></th></tr></thead>
+      <tbody>
+        {% for j in jobs %}
+        <tr id="job-row-{{ j.id }}">
+          <td>{{ j.kind_label }}<div class="row-sub mono">{{ j.id[:8] }}</div></td>
+          <td>{{ job_badge(j.status) }}</td>
+          <td class="nowrap">{{ (j.started_at or j.created_at)|dt }}</td>
+          <td class="nowrap">{{ j.started_at|duration(j.finished_at) if j.started_at else '—' }}</td>
+          <td class="cell-msg">{{ (j.error or j.message or '—')|truncate(90) }}</td>
+          <td class="num"><button type="button" class="btn btn-sm btn-ghost" hx-get="/sync/jobs/{{ j.id|urlencode }}?page=sync{{ '&poll=1' if j.active }}" hx-target="#live-job" hx-swap="innerHTML">{{ _("Details") }}</button></td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+{% elif jobs_ok %}
+  {{ empty('clock', _('No jobs in the history'), _('After you start a sync, a citation check or a catalog refresh, the job will appear here.')) }}
+{% else %}
+  {{ empty('info', _('Job history is unavailable'), _('The jobs module is not loaded in this instance.')) }}
+{% endif %}
+</div>

@@ -1,0 +1,71 @@
+{% from "_macros.html" import icon, job_badge %}
+{% if job is none %}
+{% set missing_id %}<span class="mono">{{ job_id }}</span>{% endset %}
+<div class="callout callout-warn" role="status">{{ icon('alert-triangle') }}<div>{{ _("Job {id} was not found or the jobs module is unavailable.", id=missing_id) }}</div></div>
+{% else %}
+<article class="card job job-{{ job.status }}" id="job-{{ job.id }}"
+  {% if job.active %}hx-get="/sync/jobs/{{ job.id|urlencode }}?poll=1&page={{ page|default('sync') }}" hx-trigger="every 2s" hx-swap="outerHTML"{% endif %}>
+  <header class="job-head">
+    <div>
+      <h3>{{ job.kind_label }}</h3>
+      <div class="row-sub"><span class="mono">{{ job.id[:8] }}</span> · {{ _("created {when}", when=job.created_at|dts) }}{% if job.started_at %} · {{ _("duration {value}", value=job.started_at|duration(job.finished_at)) }}{% endif %}</div>
+    </div>
+    {{ job_badge(job.status) }}
+  </header>
+
+  {% if job.progress is not none or job.active %}
+  <div class="progress{% if job.progress is none %} is-indeterminate{% endif %}" role="progressbar" aria-label="{{ _('Job progress') }}"
+       aria-valuemin="0" aria-valuemax="100" {% if job.progress is not none %}aria-valuenow="{{ job.progress|round|int }}"{% endif %}>
+    <span style="width: {{ (job.progress if job.progress is not none else 35)|round(1) }}%"></span>
+  </div>
+  <div class="progress-meta"><span>{{ job.message or (_('Waiting in the queue…') if job.status == 'queued' else _('Working…')) }}</span>{% if job.progress is not none %}<span class="mono">{{ job.progress|round|int }}%</span>{% endif %}</div>
+  {% elif job.message %}
+  <p class="job-msg">{{ job.message }}</p>
+  {% endif %}
+
+  {% if job.error %}<div class="callout callout-danger" role="alert">{{ icon('alert-circle') }}<div><strong>{{ _("The job ended with an error.") }}</strong> <span class="mono small">{{ job.error }}</span></div></div>{% endif %}
+
+  {% if job.log_tail %}
+  <details class="job-log" {{ 'open' if job.active or job.status == 'failed' }}>
+    <summary>{{ _("Job log") }}</summary>
+    <pre class="log" tabindex="0" aria-label="{{ _('Last log lines') }}">{{ job.log_tail }}</pre>
+  </details>
+  {% endif %}
+
+  {% if job.cancel_requested %}
+  <div class="callout callout-warn" role="status">{{ icon('ban') }}<div><strong>{{ _("Cancellation requested.") }}</strong> {{ _("The job is finishing its current step (for a sync: the document being processed right now), and the remaining documents will be skipped. Work already done is kept.") }}</div></div>
+  {% endif %}
+
+  {% if job.active %}
+  <div class="job-foot">
+    {% if job.can_cancel or job.cancel_requested %}
+    <button type="button" class="btn btn-sm" hx-post="/sync/jobs/{{ job.id|urlencode }}/cancel?page={{ page|default('sync') }}"
+            hx-target="#job-{{ job.id }}" hx-swap="outerHTML" hx-disabled-elt="this"
+            hx-confirm="{{ _('Cancel this job? Documents already processed are kept, the rest are skipped.') }}"
+            {{ 'disabled' if job.cancel_requested }}>
+      {{ icon('ban') }}<span>{{ _('Cancelling…') if job.cancel_requested else _('Cancel') }}</span>
+    </button>
+    {% endif %}
+    <div id="cancel-msg" aria-live="polite"></div>
+  </div>
+  {% endif %}
+
+  {% if not job.active %}
+  <div class="job-foot">
+    {% if job.report_name %}<a class="btn btn-sm" href="/sync/reports/{{ job.report_name|urlencode }}">{{ icon('file-text') }}<span>{{ _("View the change report") }}</span></a>{% endif %}
+    {% if job.kind == 'check_citations' and job.status == 'done' %}<a class="btn btn-sm" href="/citations">{{ icon('file-check') }}<span>{{ _("View results") }}</span></a>{% endif %}
+    {% if job.result and job.result|pretty %}
+    <details class="job-result"><summary>{{ _("Result (raw data)") }}</summary><pre class="log">{{ job.result|pretty }}</pre></details>
+    {% endif %}
+  </div>
+  {% endif %}
+
+  {% if poll and not job.active %}
+    {% if page|default('sync') == 'citations' and job.kind == 'check_citations' %}
+    <div hidden hx-get="/citations" hx-trigger="load" hx-target="#citations-results" hx-swap="outerHTML"></div>
+    {% elif page|default('sync') == 'sync' %}
+    <div hidden hx-get="/sync/jobs" hx-trigger="load" hx-target="#job-history" hx-swap="outerHTML"></div>
+    {% endif %}
+  {% endif %}
+</article>
+{% endif %}

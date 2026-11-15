@@ -1,0 +1,66 @@
+{% from "_evidence.html" import evidence_card %}
+{% from "_macros.html" import icon %}
+{% macro ref_chip(ds, uid) %}
+  {% if viewer %}
+  <a class="chip chip-link mono" href="/documents/{{ ds|urlencode }}?unit={{ uid|urlencode }}"
+     hx-get="/documents/{{ ds|urlencode }}/unit?ref={{ uid|urlencode }}" hx-target="#unit-viewer" hx-swap="innerHTML" hx-push-url="/documents/{{ ds|urlencode }}?unit={{ uid|urlencode }}">{{ uid }}</a>
+  {% else %}
+  <a class="chip chip-link mono" href="/search?mode=lookup&ds={{ ds|urlencode }}&ref={{ uid|urlencode }}">{{ uid }}</a>
+  {% endif %}
+{% endmacro %}
+
+{% if item.found and item.evidence %}
+  {% if viewer %}<span data-active-unit="{{ item.evidence.unit_id }}" hidden></span>{% endif %}
+  {{ evidence_card(item.evidence, dom='main') }}
+
+  {% if item.prev_id or item.next_id %}
+  <nav class="sibling-nav" aria-label="{{ _('Neighboring units') }}">
+    {% if item.prev_id %}<span class="sibling">{{ icon('chevron-left') }}<span class="muted">{{ _("previous") }}</span> {{ ref_chip(ds, item.prev_id) }}</span>{% else %}<span></span>{% endif %}
+    {% if item.next_id %}<span class="sibling">{{ ref_chip(ds, item.next_id) }} <span class="muted">{{ _("next") }}</span>{{ icon('chevron-right') }}</span>{% endif %}
+  </nav>
+  {% endif %}
+
+  {% if item.duplicates %}
+  {% set dup_head %}<strong>{{ _("The source repeats this number {n} times", n=item.evidence.n_same_id) }}</strong>{% endset %}
+  <div class="callout callout-warn">{{ icon('alert-triangle') }}<div>{{ _("{head} (a numbering error in the source). The other copies are below. The first one is returned.", head=dup_head) }}</div></div>
+  {% for d in item.duplicates %}{{ evidence_card(d, dom='dup' ~ loop.index, duplicate=true) }}{% endfor %}
+  {% endif %}
+
+  {% if item.children %}
+  <section class="card children-card" aria-label="{{ _('Sub-units') }}">
+    <div class="card-head"><h3>{{ _("Sub-units") }}</h3><span class="hint">{{ item.children|length }}</span></div>
+    <ul class="child-list">
+      {% for c in item.children[:60] %}
+      <li>
+        {{ ref_chip(ds, c.unit_id) }}
+        <span class="child-kind">{{ _(KIND_LABEL.get(c.unit_kind, c.unit_kind)) }}</span>
+        <span class="child-title">{{ c.title or (c.text|truncate(90)) }}</span>
+      </li>
+      {% endfor %}
+    </ul>
+    {% if item.children|length > 60 %}<p class="hint">{{ _("Showing 60 of {total} units. The rest is in the document's table of contents.", total=item.children|length) }}</p>{% endif %}
+  </section>
+  {% endif %}
+{% else %}
+  <section class="card notfound" aria-live="polite">
+    <div class="notfound-head">
+      <span class="badge badge-warn">{{ icon('alert-triangle') }}<span>{{ _("Not found") }}</span></span>
+      <code class="mono">{{ doc_label(ds) }} · {{ item.requested }}</code>
+    </div>
+    {% if document_known is defined and not document_known %}
+      {% set list_link %}<a href="/documents">{{ _("See the list of documents") }}</a>{% endset %}
+      <p>{{ _("{doc} is not indexed in this database. {list_link} or add the PDF file on the Sync tab.", doc=doc_label(ds), list_link=list_link) }}</p>
+    {% else %}
+      <p>{{ _("The current edition of {doc} has no unit with that number. Numbers are never guessed, so nothing was forced to match.", doc=doc_label(ds)) }}</p>
+      {% if item.possibly_renumbered_to %}
+      <h4>{{ _("Probably renumbered to") }}</h4>
+      <div class="chips">{% for uid in item.possibly_renumbered_to %}{{ ref_chip(ds, uid) }}{% endfor %}</div>
+      <p class="hint">{{ _("Based on the report of the last sync (text similarity).") }}</p>
+      {% endif %}
+      {% if item.nearest %}
+      <h4>{{ _("Nearest existing numbers") }}</h4>
+      <div class="chips">{% for uid in item.nearest %}{{ ref_chip(ds, uid) }}{% endfor %}</div>
+      {% endif %}
+    {% endif %}
+  </section>
+{% endif %}

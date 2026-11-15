@@ -1,0 +1,33 @@
+# python / tooling
+.venv/
+__pycache__/
+*.pyc
+.pytest_cache/
+.ruff_cache/
+
+# working state of the service and the converter
+.state/
+.state-docker/
+reports/audit.jsonl
+.staging/
+
+# document content and derived data: never in this repo (the documents' own terms of use; rebuildable with `sync`)
+*.db
+*.db-*
+*.bak
+md/
+figures/
+reports/
+
+# secrets are never kept here (kprun injects them)
+.env
+.env.*
+
+# local config: usually only {"extends": "<private profile>"}; a neutral example is vedun.config.example.json
+vedun.config.json
+
+# index files of an enclosing folder, not part of the project
+INDEX.md
+
+# local compose additions (own folders, host paths); see the README
+compose.override.yaml

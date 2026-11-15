@@ -1,0 +1,25 @@
+{% extends "base.html" %}
+{% import "_macros.html" as m %}
+{% block title %}{{ _("Citations in repo") }}{% endblock %}
+{% block content %}
+{{ m.page_header(_("Citations in repo"), _("Checks that every document reference in your notes (for example “{example}”) points to an existing unit in the current edition of the document.", example=_("{doc} Section 2.3.1", doc=doc_label("3-26")))) }}
+
+<section class="card" aria-labelledby="h-run">
+  <div class="card-head"><h2 id="h-run">{{ _("Run a check") }}</h2></div>
+  <form class="inline-form" hx-post="/citations/run" hx-target="#citations-job" hx-swap="innerHTML" hx-disabled-elt="find button[type=submit]">
+    <div class="field grow">
+      <label for="repo">{{ _("Repository folder (optional)") }}</label>
+      <input id="repo" class="input mono" name="repo" placeholder="{{ _('the default folder configured on the server') }}" autocomplete="off">
+    </div>
+    <div class="field field-btn"><button type="submit" class="btn btn-primary" {{ 'disabled' if not jobs_ok }}>{{ m.icon('play') }}<span>{{ _("Check citations") }}</span></button></div>
+  </form>
+  {% set md_el %}<span class="mono">.md</span>{% endset %}
+  {% set txt_el %}<span class="mono">.txt</span>{% endset %}
+  <p class="hint">{{ _("Files of type {md} and {txt} are searched. The result replaces the previous one when the job finishes.", md=md_el, txt=txt_el) }}{% if not jobs_ok %} <strong>{{ _("The jobs module is unavailable in this instance.") }}</strong>{% endif %}</p>
+  <div id="citations-job" aria-live="polite">
+    {% if live %}{% set job = live %}{% set poll = true %}{% set page = 'citations' %}{% include "partials/job_card.html" %}{% endif %}
+  </div>
+</section>
+
+{% include "partials/citations_results.html" %}
+{% endblock %}

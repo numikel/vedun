@@ -1,0 +1,7 @@
+{% extends "base.html" %}
+{% import "_macros.html" as m %}
+{% block title %}{{ _("Search") }}{% endblock %}
+{% block content %}
+{{ m.page_header(_("Search"), _("Three ways to reach the verbatim text and clause number: by number, full text and hybrid.")) }}
+{% include "partials/search_panel.html" %}
+{% endblock %}

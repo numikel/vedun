@@ -1,0 +1,132 @@
+{% extends "base.html" %}
+{% import "_macros.html" as m %}
+{% block title %}{{ _("Overview") }}{% endblock %}
+{% block content %}
+{% call m.page_header(_("Overview"), _("Local knowledge base: {corpus}.", corpus=corpus_name())) %}
+  <a class="btn" href="/search?mode=lookup">{{ m.icon('hash') }}<span>{{ _("By number") }}</span></a>
+  <a class="btn btn-primary" href="/sync">{{ m.icon('refresh') }}<span>{{ _("Sync") }}</span></a>
+{% endcall %}
+
+<form class="card quick-search" action="/search" method="get" role="search">
+  <input type="hidden" name="mode" value="hybrid">
+  <label for="quick-q" class="quick-label">{{ m.icon('search') }}<span>{{ _("Quick search") }}</span></label>
+  <div class="quick-row">
+    <input id="quick-q" class="input input-lg" type="search" name="q" placeholder="{{ _('e.g. maximum storage height') }}" autocomplete="off">
+    <button class="btn btn-primary btn-lg" type="submit">{{ _("Search") }}</button>
+  </div>
+  {% set example %}<code>{{ _("{doc} Section 2.3.1", doc=doc_label("3-26")) }}</code>{% endset %}
+  <p class="hint">{{ _("Hybrid search (BM25 + vectors). Works in Polish and English. A document and clause number in the query (e.g. {example}) gives an exact hit.", example=example) }}</p>
+</form>
+
+<section class="kpi-grid" aria-label="{{ _('Indicators') }}">
+  {{ m.kpi(_("Documents"), sheets|length|num, 'library', _('indexed, one edition each')) }}
+  {{ m.kpi(_("Clauses"), totals.clause|num, 'hash', _('numbered requirements')) }}
+  {{ m.kpi(_("Tables"), totals.table|num, 'table') }}
+  {{ m.kpi(_("Figures"), totals.figure|num, 'image', _('with the image cut out')) }}
+</section>
+
+<section class="kpi-grid kpi-grid-2" aria-label="{{ _('Sync status') }}">
+  <div class="card kpi">
+    <div class="kpi-head"><span class="kpi-icon">{{ m.icon('clock') }}</span><span class="kpi-label">{{ _("Last sync") }}</span></div>
+    <div class="kpi-value kpi-value-sm">{{ last_sync|dt if last_sync else '—' }}</div>
+    <div class="kpi-sub">{% if last_sync %}{{ _("from jobs, reports or the indexing date") }}{% else %}{{ _("not run yet") }}{% endif %}</div>
+  </div>
+
+  <div class="card kpi kpi-wide">
+    <div class="kpi-head"><span class="kpi-icon">{{ m.icon('shield-check') }}</span><span class="kpi-label">{{ _("Freshness against {source}", source=source_name()) }}</span></div>
+    {% if cat_counts %}
+      <ul class="status-grid">
+        {% for key in ['current','outdated','missing_locally','withdrawn'] %}
+        {% set meta = STATUS_META[key] %}
+        <li class="status-cell tone-{{ meta[2] }}">
+          <span class="status-n">{{ cat_counts.get(key, 0) }}</span>
+          <span class="status-l">{{ m.icon(meta[1]) }}<span>{{ _(meta[0])|lower }}</span></span>
+        </li>
+        {% endfor %}
+      </ul>
+    {% else %}
+      <div class="kpi-value kpi-value-sm muted">{{ _("No catalog data") }}</div>
+      {% set sync_link %}<a href="/sync">{{ _("Sync") }}</a>{% endset %}
+      <div class="kpi-sub">{{ _("Refresh the catalog on the {page} page to compare editions with {source}.", page=sync_link, source=source_name()) }}</div>
+    {% endif %}
+  </div>
+
+  <div class="card kpi">
+    <div class="kpi-head"><span class="kpi-icon">{{ m.icon('wallet') }}</span><span class="kpi-label">{{ _("API cost") }}</span></div>
+    <div class="kpi-value kpi-value-sm">{{ cost|usd if cost is not none else '—' }}</div>
+    <div class="kpi-sub">{% if cost is not none %}{{ _("embeddings and reranking combined") }}{% else %}{{ _("cost counter unavailable") }}{% endif %}</div>
+  </div>
+</section>
+
+<div class="two-col">
+  <section class="card" aria-labelledby="h-reports">
+    <div class="card-head"><h2 id="h-reports">{{ _("Recent changes") }}</h2><a class="link-quiet" href="/sync">{{ _("All reports") }}</a></div>
+    {% if reports %}
+    <ul class="list-rows">
+      {% for r in reports %}
+      <li>
+        <a class="row-link" href="/sync/reports/{{ r.name|urlencode }}">
+          <span class="row-main"><span class="mono">{{ r.name }}</span><span class="row-sub">{{ r.mtime|dt }}</span></span>
+          <span class="row-chips">
+            {% if r.added %}<span class="chip">+{{ r.added|length }} {{ r.added|length|plural('new', 'new') }}</span>{% endif %}
+            {% if r.replaced %}<span class="chip">{{ r.replaced|length }} {{ r.replaced|length|plural('replaced', 'replaced') }}</span>{% endif %}
+            {% if r.removed %}<span class="chip">−{{ r.removed|length }} {{ r.removed|length|plural('removed', 'removed') }}</span>{% endif %}
+            {% if not (r.added or r.replaced or r.removed) %}<span class="chip chip-muted">{{ _("no changes") }}</span>{% endif %}
+          </span>
+          {{ m.icon('chevron-right', 'row-arrow') }}
+        </a>
+      </li>
+      {% endfor %}
+    </ul>
+    {% else %}
+      {{ m.empty('file-text', _('No change reports'), _("A report is written after a sync that added or replaced a document. Files named sync_YYYY-MM-DD.md land in the reports folder.")) }}
+    {% endif %}
+  </section>
+
+  <section class="card" aria-labelledby="h-jobs">
+    <div class="card-head"><h2 id="h-jobs">{{ _("Recent jobs") }}</h2><a class="link-quiet" href="/sync">{{ _("History") }}</a></div>
+    {% if jobs %}
+    <ul class="list-rows">
+      {% for j in jobs %}
+      <li>
+        <a class="row-link" href="/sync#job-row-{{ j.id }}">
+          <span class="row-main"><span>{{ j.kind_label }}</span><span class="row-sub">{{ (j.started_at or j.created_at)|dt }}{% if j.message %} · {{ j.message|truncate(60) }}{% endif %}</span></span>
+          <span class="row-chips">{{ m.job_badge(j.status) }}</span>
+          {{ m.icon('chevron-right', 'row-arrow') }}
+        </a>
+      </li>
+      {% endfor %}
+    </ul>
+    {% else %}
+      {% if jobs_ok %}
+        {{ m.empty('play', _('No job has been run yet'), _('Jobs (sync, citation check, catalog refresh) will appear here with their progress and status.')) }}
+      {% else %}
+        {{ m.empty('info', _('Jobs are unavailable'), _('The jobs module is not loaded in this instance. Browsing and search work normally.')) }}
+      {% endif %}
+    {% endif %}
+  </section>
+</div>
+
+<section class="card" aria-labelledby="h-documents">
+  <div class="card-head"><h2 id="h-documents">{{ _("Indexed documents") }}</h2><a class="link-quiet" href="/documents">{{ _("See all") }}</a></div>
+  {% if sheets %}
+  <div class="table-scroll">
+    <table class="table">
+      <thead><tr><th>{{ _("Number") }}</th><th>{{ _("Title") }}</th><th>{{ _("Edition") }}</th><th class="num">{{ _("Units") }}</th></tr></thead>
+      <tbody>
+      {% for s in sheets[:8] %}
+        <tr>
+          <td><a class="mono strong" href="/documents/{{ s.doc_id|urlencode }}">{{ s.doc_id }}</a></td>
+          <td>{{ s.title }}</td>
+          <td class="nowrap">{{ s.edition_label or s.edition }}</td>
+          <td class="num">{{ s.n_units|num }}</td>
+        </tr>
+      {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {% else %}
+    {{ m.empty('library', _('The database is empty'), _('Add PDF files on the Sync page to build the index.')) }}
+  {% endif %}
+</section>
+{% endblock %}

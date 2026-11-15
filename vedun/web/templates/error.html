@@ -1,0 +1,10 @@
+{% extends "base.html" %}
+{% import "_macros.html" as m %}
+{% block title %}{{ title }}{% endblock %}
+{% block content %}
+<div class="card error-card">
+  {% call m.empty('alert-triangle', title, text) %}
+    <a class="btn" href="/">{{ _("Back to the overview") }}</a>
+  {% endcall %}
+</div>
+{% endblock %}

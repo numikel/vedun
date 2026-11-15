@@ -1,0 +1,8 @@
+# Normalise text to LF in the repository; checkouts follow the platform except where the format needs LF.
+* text=auto
+# shell scripts and the container build run on Linux: a CRLF checkout on Windows breaks them ("bad interpreter")
+*.sh text eol=lf
+Dockerfile text eol=lf
+*.yaml text eol=lf
+*.yml text eol=lf
+uv.lock text eol=lf

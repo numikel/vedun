@@ -1,0 +1,61 @@
+{% from "_macros.html" import icon, badge, empty %}
+<section id="citations-results" class="card" aria-labelledby="h-cit">
+  <div class="card-head">
+    <h2 id="h-cit">{{ _("Latest results") }}</h2>
+    {% if data.available %}<span class="hint">{{ data.generated_at|dt if data.generated_at else _('time unknown') }} · {{ n_all|num }} {{ n_all|plural('citation', 'citations') }}</span>{% endif %}
+  </div>
+
+  {% if not data.available %}
+    {{ empty('file-check', _('No check results'), _('Run a check above. When the job finishes, a table appears here: file:line, citation, status and a suggested fix.')) }}
+  {% elif not n_all %}
+    {{ empty('check-circle', _('No citations found'), _('The files checked contain no document references in a recognized format.')) }}
+  {% else %}
+  <div class="filter-bar">
+    <div class="chips" role="group" aria-label="{{ _('Status filter') }}">
+      {% for slug, label, n in chips %}
+      {% set u = url_with('/citations', {'q': q}, status=slug) %}
+      <a class="chip chip-filter{% if status == slug %} is-active{% endif %}" href="{{ u }}" aria-pressed="{{ 'true' if status == slug else 'false' }}"
+         hx-get="{{ u }}" hx-target="#citations-results" hx-swap="outerHTML" hx-push-url="true">
+        <span>{{ label }}</span><span class="chip-n mono">{{ n }}</span>
+      </a>
+      {% endfor %}
+    </div>
+    <div class="field filter-text">
+      <label class="sr-only" for="cit-q">{{ _("Filter by text") }}</label>
+      <div class="input-icon">{{ icon('search') }}<input id="cit-q" class="input" type="search" name="q" value="{{ q }}" placeholder="{{ _('Filter by file, citation or suggestion') }}"
+        hx-get="/citations" hx-include="[name=status]" hx-target="#citations-results" hx-swap="outerHTML" hx-trigger="input changed delay:300ms, search" hx-push-url="true" autocomplete="off"></div>
+      <input type="hidden" name="status" value="{{ status }}">
+    </div>
+  </div>
+
+  {% if rows %}
+  <div class="table-scroll">
+    <table class="table table-cites">
+      <thead><tr><th>{{ _("File:line") }}</th><th>{{ _("Citation") }}</th><th>{{ _("Status") }}</th><th>{{ _("Suggestion") }}</th></tr></thead>
+      <tbody>
+        {% for r in rows %}
+        <tr>
+          <td><div class="cell-path">
+            <span class="path mono" title="{{ r.file }}:{{ r.line }}">{{ r.file }}:{{ r.line }}</span>
+            <button type="button" class="btn btn-icon btn-ghost btn-xs" data-copy="{{ r.file }}:{{ r.line }}" aria-label="{{ _('Copy the path {path}', path=r.file ~ ':' ~ r.line) }}" title="{{ _('Copy path') }}">{{ icon('copy') }}</button>
+          </div></td>
+          <td class="mono cell-cite">{{ r.citation }}</td>
+          <td>{{ badge(r.label, r.icon, r.tone) }}</td>
+          <td class="cell-sug">{% if r.suggestion %}{% if r.has_note %}{{ icon('info') }} {% endif %}{{ r.suggestion }}{% else %}<span class="muted">—</span>{% endif %}</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  <nav class="pager" aria-label="{{ _('Pagination') }}">
+    <span class="pager-info">{{ _("Rows {first}–{last} of {total}", first=offset + 1, last=offset + rows|length, total=n_filtered|num) }}</span>
+    <span class="pager-btns">
+      {% if prev %}<a class="btn btn-sm" href="{{ prev }}" hx-get="{{ prev }}" hx-target="#citations-results" hx-swap="outerHTML" hx-push-url="true">{{ icon('chevron-left') }}<span>{{ _("Previous") }}</span></a>{% endif %}
+      {% if next %}<a class="btn btn-sm" href="{{ next }}" hx-get="{{ next }}" hx-target="#citations-results" hx-swap="outerHTML" hx-push-url="true"><span>{{ _("Next") }}</span>{{ icon('chevron-right') }}</a>{% endif %}
+    </span>
+  </nav>
+  {% else %}
+    {{ empty('search', _('No rows for this filter'), _('Change the status or the filter phrase.')) }}
+  {% endif %}
+  {% endif %}
+</section>

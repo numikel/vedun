@@ -1,0 +1,2 @@
+{% from "_macros.html" import icon %}
+<div class="callout callout-{{ tone|default('info') }}" role="alert">{{ icon(icon_name|default('info')) }}<div>{{ message }}</div></div>

@@ -1,0 +1,92 @@
+{% extends "base.html" %}
+{% import "_macros.html" as m %}
+{% block title %}{{ doc_label(s.doc_id) }}{% endblock %}
+{% block content %}
+<nav class="crumbs" aria-label="{{ _('Breadcrumb') }}"><a href="/documents">{{ _("Documents") }}</a>{{ m.icon('chevron-right') }}<span class="mono">{{ doc_label(s.doc_id) }}</span></nav>
+
+<header class="card doc-head">
+  <div class="doc-head-main">
+    <div class="doc-id mono">{{ doc_label(s.doc_id) }}</div>
+    <h1>{{ s.title }}</h1>
+    <div class="doc-badges">
+      {{ m.catalog_badge(status) }}
+      <span class="chip">{{ _("Edition:") }} <strong>{{ s.edition_label or s.edition }}</strong></span>
+      {% if latest and status == 'outdated' %}<span class="chip chip-warn">{{ _("On {source}: {edition}", edition=latest, source=source_name()) }}</span>{% endif %}
+    </div>
+  </div>
+  <dl class="meta-grid">
+    <div><dt>{{ _("Clauses") }}</dt><dd>{{ counts.get('clause', 0)|num }}</dd></div>
+    <div><dt>{{ _("Tables") }}</dt><dd>{{ counts.get('table', 0)|num }}</dd></div>
+    <div><dt>{{ _("Figures") }}</dt><dd>{{ counts.get('figure', 0)|num }}</dd></div>
+    <div><dt>{{ _("Appendices") }}</dt><dd>{{ counts.get('appendix', 0)|num }}</dd></div>
+    <div><dt>{{ _("PDF pages") }}</dt><dd>{{ s.pages|num }}</dd></div>
+    <div><dt>{{ _("Vector chunks") }}</dt><dd>{{ s.n_chunks|num }}</dd></div>
+    <div class="meta-wide"><dt>{{ _("Indexed") }}</dt><dd>{{ s.indexed_at|dt }}</dd></div>
+    <div class="meta-wide"><dt>{{ _("Source file") }}</dt><dd class="mono small" title="{{ s.source_path or s.source_pdf }}">{{ s.source_pdf }}</dd></div>
+    <div class="meta-wide"><dt>SHA-256</dt><dd class="mono small" title="{{ s.source_sha256 }}">{{ s.source_sha256[:16] }}…</dd></div>
+    <div class="meta-wide"><dt>{{ _("Embeddings") }}</dt>
+      <dd>{% if s.models %}{% for k, v in s.models.items() %}<span class="chip chip-sm mono">{{ k }} {{ v }}</span> {% endfor %}{% else %}—{% endif %}</dd></div>
+  </dl>
+  {% if doc %}
+  <div class="doc-files" style="grid-column: 1 / -1; display: flex; flex-wrap: wrap; gap: .5rem; align-items: center">
+    <a class="btn btn-sm" id="doc-md" href="/api/documents/{{ s.doc_id|urlencode }}.md?full=true" download{% if not doc.md_exists %} aria-disabled="true" hidden{% endif %}>{{ m.icon('file-text') }}<span>{{ _("Download Markdown") }}</span></a>
+    {% if doc.md_path_host %}{{ m.copy_btn(doc.md_path_host, _('Copy MD path'), _('Copy the path of the Markdown file on your computer'), 'doc-md-path') }}{% endif %}
+    <a class="btn btn-sm" id="doc-pdf" href="/api/documents/{{ s.doc_id|urlencode }}.pdf" target="_blank" rel="noopener"{% if not doc.pdf_exists %} aria-disabled="true" hidden{% endif %}>{{ m.icon('external-link') }}<span>{{ _("Open PDF (original)") }}</span></a>
+    {% if doc.pdf_path_host %}{{ m.copy_btn(doc.pdf_path_host, _('Copy PDF path'), _('Copy the path of the PDF file on your computer'), 'doc-pdf-path') }}{% endif %}
+  </div>
+  {% endif %}
+</header>
+
+<div class="tabs" role="tablist" aria-label="{{ _('Document view') }}">
+  <a role="tab" class="tab" aria-selected="{{ 'true' if tab == 'toc' else 'false' }}" href="/documents/{{ s.doc_id|urlencode }}">{{ m.icon('list') }}<span>{{ _("Structure") }}</span></a>
+  <a role="tab" class="tab" aria-selected="{{ 'true' if tab == 'figures' else 'false' }}" href="/documents/{{ s.doc_id|urlencode }}?tab=figures">{{ m.icon('image') }}<span>{{ _("Figures") }} ({{ counts.get('figure', 0) }})</span></a>
+</div>
+
+{% if tab == 'toc' %}
+<div class="split">
+  <section class="card toc-card" aria-label="{{ _('Table of contents of the document') }}">
+    <div class="card-head"><h2>{{ _("Table of contents") }}</h2><span class="hint">{{ _("Click an entry to see its text. The arrow expands sub-clauses.") }}</span></div>
+    <ul class="toc" role="tree">
+      {% include "partials/toc_nodes.html" %}
+    </ul>
+  </section>
+
+  <section class="viewer" id="unit-viewer" aria-live="polite" aria-label="{{ _('Selected unit') }}">
+    {% if item %}
+      {% set viewer = true %}{% set ds = s.doc_id %}{% set document_known = true %}
+      {% include "partials/lookup_item.html" %}
+    {% else %}
+      <div class="card">
+        {{ m.empty('hash', _('Select a clause, table or figure'), _('Pick an entry from the table of contents to see its verbatim text, a ready-to-paste citation (PL and EN) and the quote-checking tool.')) }}
+      </div>
+    {% endif %}
+  </section>
+</div>
+{% else %}
+<section class="card" aria-label="{{ _('Figure gallery') }}">
+  {% if figures %}
+  <ul class="gallery">
+    {% for f in figures %}
+    <li class="gallery-item">
+      <a class="thumb" href="{{ fig_url(s.doc_id, f.unit_id) }}" data-lightbox
+         data-caption="{{ f.unit_id }}{% if f.caption %}: {{ f.caption }}{% endif %}"
+         data-page-src="{{ page_url(s.doc_id, f.page) if f.page else '' }}"
+         data-fig-src="{{ fig_url(s.doc_id, f.unit_id) }}"
+         data-unit-href="/documents/{{ s.doc_id|urlencode }}?unit={{ f.unit_id|urlencode }}">
+        {% if f.has_file %}<img loading="lazy" src="{{ fig_url(s.doc_id, f.unit_id) }}" alt="{{ f.unit_id }}: {{ f.caption }}">
+        {% else %}<span class="thumb-missing">{{ m.icon('image') }}<span>{{ _("No image") }}</span></span>{% endif %}
+      </a>
+      <div class="gallery-cap">
+        <a class="mono strong" href="/documents/{{ s.doc_id|urlencode }}?unit={{ f.unit_id|urlencode }}">{{ f.unit_id }}</a>
+        <span class="gallery-title">{{ f.caption|truncate(90) }}</span>
+        {% if f.page %}<button type="button" class="link-btn" data-lightbox-page="{{ page_url(s.doc_id, f.page) }}" data-caption="{{ f.unit_id }} · {{ _('PDF page') }}">{{ _("show page") }}</button>{% endif %}
+      </div>
+    </li>
+    {% endfor %}
+  </ul>
+  {% else %}
+    {{ m.empty('image', _('This document has no figures'), _('None of the units of this document is a figure.')) }}
+  {% endif %}
+</section>
+{% endif %}
+{% endblock %}

@@ -1,0 +1,79 @@
+{% import "_macros.html" as m %}
+{% from "_evidence.html" import evidence_card %}
+<div id="results" class="results" aria-live="polite">
+{% if result is none %}
+  <div class="card">
+    {% call m.empty('search', _('Ask a question or enter a number'), _('Results appear here as evidence cards: with a citation to paste, the verbatim text and where the result came from.')) %}
+      <div class="chips chips-center">
+        {% if form.mode == 'lookup' %}
+          <a class="chip chip-link mono" href="/search?mode=lookup&ds=3-26&ref=2.3.1">{{ _("3-26 · Section 2.3.1") }}</a>
+          <a class="chip chip-link mono" href="/search?mode=lookup&ds=2-81&ref=Tab.%202.1">{{ _("2-81 · Table 2.1") }}</a>
+        {% elif form.mode == 'fulltext' %}
+          <a class="chip chip-link" href="/search?mode=fulltext&q=storage+height">storage height</a>
+          <a class="chip chip-link mono" href="/search?mode=fulltext&syntax=fts5&q=cylind*">cylind*</a>
+        {% else %}
+          {% set ex1 = _("maximum storage height") %}
+          {% set ex2 = _("inspection interval") %}
+          <a class="chip chip-link" href="{{ url_with('/search', {}, mode='hybrid', q=ex1) }}">{{ ex1 }}</a>
+          <a class="chip chip-link" href="{{ url_with('/search', {}, mode='hybrid', q=ex2) }}">{{ ex2 }}</a>
+        {% endif %}
+      </div>
+    {% endcall %}
+  </div>
+
+{% elif result.kind == 'error' %}
+  <div class="callout callout-danger" role="alert">{{ m.icon('alert-circle') }}<div>{{ result.message }}</div></div>
+
+{% elif result.kind == 'lookup' %}
+  {% set resp = result.resp %}
+  {% for item in resp.items %}
+    {% set ds = result.ds %}{% set document_known = resp.document_indexed %}{% set viewer = false %}
+    <div class="lookup-block">
+      {% if resp.items|length > 1 %}<h2 class="result-h">{{ _("Query:") }} <span class="mono">{{ item.requested }}</span></h2>{% endif %}
+      {% include "partials/lookup_item.html" %}
+    </div>
+  {% endfor %}
+
+{% elif result.kind == 'fulltext' %}
+  {% set resp = result.resp %}
+  {% if not resp.ok %}
+    <div class="callout callout-danger" role="alert">{{ m.icon('alert-circle') }}
+      <div><strong>{{ _("The query is not valid.") }}</strong>
+        <div class="mono small">{{ resp.error }}</div>
+        {% if form.syntax == 'fts5' %}<div class="hint">{{ _("Switch the syntax to “Safe” or fix the expression (see the “Query syntax” help).") }}</div>{% endif %}
+      </div>
+    </div>
+  {% else %}
+    <div class="result-summary">
+      <strong>{{ resp.total|num }}</strong> {{ resp.total|plural('unit matches the query', 'units match the query') }}
+      <span class="chip chip-sm mono" title="{{ _('Expression passed to FTS5') }}">{{ resp.match_expression|truncate(80) }}</span>
+      <span class="chip chip-sm">{{ _("BM25 only, no vectors or network") }}</span>
+    </div>
+    {% if result.hits %}
+      {% for h in result.hits %}{{ evidence_card(h, rank=(h.retrieval.final_rank or (loop.index + form.offset)), dom=loop.index) }}{% endfor %}
+      {{ m.pager(result.pager) }}
+    {% else %}
+      <div class="card">{{ m.empty('search', _('No hits'), _('Try a shorter phrase, a prefix with an asterisk (e.g. cylind*) or hybrid search, which understands questions in Polish.')) }}</div>
+    {% endif %}
+  {% endif %}
+
+{% elif result.kind == 'hybrid' %}
+  {% set resp = result.resp %}
+  <div class="result-summary">
+    <strong>{{ resp.total_candidates|num }}</strong> {{ resp.total_candidates|plural('candidate', 'candidates') }}
+    <span class="chip chip-sm">{{ _("BM25 {w_fts} / vectors {w_vec}", w_fts=resp.w_fts|score(2), w_vec=resp.w_vec|score(2)) }}</span>
+    <span class="chip chip-sm">{{ _("reranker: {name}", name=(RERANK_NAME.get(resp.reranker, resp.reranker) if resp.reranker else _('none'))) }}</span>
+    <span class="chip chip-sm mono">{{ resp.fusion }}</span>
+  </div>
+  {% for n in resp.notes %}
+    {% set lead = n|note_lead %}
+    <div class="callout callout-warn">{{ m.icon('alert-triangle') }}<div>{{ lead[0] }}{% if lead[1] %} <span class="mono small muted">{{ lead[1] }}</span>{% endif %}</div></div>
+  {% endfor %}
+  {% if result.hits %}
+    {% for h in result.hits %}{{ evidence_card(h, rank=(h.retrieval.final_rank or (loop.index + form.offset)), dom=loop.index) }}{% endfor %}
+    {{ m.pager(result.pager) }}
+  {% else %}
+    <div class="card">{{ m.empty('search', _('No hits'), _('No matching units found. Change the query or remove the document or unit-kind filter.')) }}</div>
+  {% endif %}
+{% endif %}
+</div>
