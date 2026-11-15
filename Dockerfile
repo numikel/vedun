@@ -3,7 +3,7 @@
 # Secrets are passed at run time only (environment), never baked into the image; see scripts/ for the launcher.
 
 # ---------------------------------------------------------------- builder: locked deps, CPU-only torch
-FROM python:3.13-slim AS builder
+FROM python:3.15-slim AS builder
 COPY --from=ghcr.io/astral-sh/uv:0.12.22 /uv /usr/local/bin/uv
 ENV UV_LINK_MODE=copy UV_COMPILE_BYTECODE=1 UV_PYTHON_DOWNLOADS=never
 WORKDIR /build
@@ -17,7 +17,7 @@ RUN uv export --frozen --no-dev --all-extras --no-hashes --no-emit-project -o /t
  && uv pip install --python /opt/venv/bin/python --torch-backend=cpu -r /tmp/req.cpu.txt
 
 # ---------------------------------------------------------------- runtime
-FROM python:3.13-slim AS runtime
+FROM python:3.15-slim AS runtime
 RUN apt-get update \
  && apt-get install -y --no-install-recommends libgomp1 libglib2.0-0 \
  && rm -rf /var/lib/apt/lists/* \
