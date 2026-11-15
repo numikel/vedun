@@ -13,3 +13,7 @@ updates:
     directory: /
     schedule:
       interval: weekly
+    # a new Python minor needs wheels for every dependency (tree-sitter had none for 3.15): move it by hand with CI
+    ignore:
+      - dependency-name: python
+        update-types: ["version-update:semver-major", "version-update:semver-minor"]
