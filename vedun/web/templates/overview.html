@@ -11,11 +11,16 @@
   <input type="hidden" name="mode" value="hybrid">
   <label for="quick-q" class="quick-label">{{ m.icon('search') }}<span>{{ _("Quick search") }}</span></label>
   <div class="quick-row">
-    <input id="quick-q" class="input input-lg" type="search" name="q" placeholder="{{ _('e.g. maximum storage height') }}" autocomplete="off">
+    {% set ex = examples() %}
+    <input id="quick-q" class="input input-lg" type="search" name="q" placeholder="{{ _('e.g. {example}', example=ex.phrases[0]) if ex and ex.phrases else _('Ask a question in your own words') }}" autocomplete="off">
     <button class="btn btn-primary btn-lg" type="submit">{{ _("Search") }}</button>
   </div>
-  {% set example %}<code>{{ _("{doc} Section 2.3.1", doc=doc_label("3-26")) }}</code>{% endset %}
+  {% if ex %}
+  {% set example %}<code>{{ ex.clause }}</code>{% endset %}
   <p class="hint">{{ _("Hybrid search (BM25 + vectors). Works in Polish and English. A document and clause number in the query (e.g. {example}) gives an exact hit.", example=example) }}</p>
+  {% else %}
+  <p class="hint">{{ _("Hybrid search (BM25 + vectors). Works in Polish and English.") }}</p>
+  {% endif %}
 </form>
 
 <section class="kpi-grid" aria-label="{{ _('Indicators') }}">

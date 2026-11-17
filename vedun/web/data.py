@@ -17,6 +17,7 @@ from datetime import UTC, datetime
 from typing import Any
 from urllib.parse import urlencode
 
+from vedun import config as C
 from vedun import db as D
 from vedun.embed import get_embedder
 from vedun.rerank import get_reranker
@@ -387,6 +388,45 @@ def _get(o: Any, name: str, default: Any = None) -> Any:
     return getattr(o, name, default)
 
 
+_SYNC_SUMMARY = re.compile(
+    r"^(Dry run: |Cancelled: )?added (\d+), replaced (\d+), removed (\d+), (unchanged|skipped) (\d+)(.*)$", re.S
+)
+_JOB_MESSAGE_PL = [
+    (re.compile(r"^Done$"), "Zakończono"),
+    (re.compile(r"^Interrupted by a service restart$"), "Przerwane przez restart usługi"),
+    (re.compile(r"^Error: "), "Błąd: "),
+    (re.compile(r"^Catalog fetched: (\d+) documents$"), r"Pobrano katalog: \1 dokumentów"),
+    (re.compile(r"^Catalog: (\d+) documents"), r"Katalog: \1 dokumentów"),
+    (
+        re.compile(r"^Cancelled after (\d+)/(\d+) files; results were not saved$"),
+        r"Anulowano po \1/\2 plikach; wyniki nie zostały zapisane",
+    ),  # noqa: E501
+    (re.compile(r"^Checked (\d+)/(\d+) files$"), r"Sprawdzono \1/\2 plików"),
+    (re.compile(r"^(\d+) citations in (\d+) files:"), r"\1 cytowań w \2 plikach:"),
+    (re.compile(r"daily API budget used up"), "dzienny budżet API wyczerpany"),
+    (re.compile(r": sync needs embeddings"), ": synchronizacja wymaga embeddingów"),
+]
+
+
+def _sync_summary_pl(m: re.Match[str]) -> str:
+    lead = {"Dry run: ": "Próba (dry run): ", "Cancelled: ": "Anulowano: "}.get(m[1] or "", "")
+    last = "bez zmian" if m[5] == "unchanged" else "pominięto"
+    rest = re.sub(r", failed (\d+):", r", nieudane \1:", m[7])
+    return f"{lead}dodano {m[2]}, zastąpiono {m[3]}, usunięto {m[4]}, {last} {m[6]}{rest}"
+
+
+def localize_job_message(s: str) -> str:
+    """Job messages are stored in English (the API and MCP read them); the Polish UI translates their fixed phrases."""
+    if current() != "pl" or not s:
+        return s
+    m = _SYNC_SUMMARY.match(s)
+    if m:
+        return _sync_summary_pl(m)
+    for rx, repl in _JOB_MESSAGE_PL:
+        s = rx.sub(repl, s)
+    return s
+
+
 def job_view(o: Any) -> JobView:
     status = str(_get(o, "status", "queued") or "queued").lower()
     prog = _get(o, "progress")
@@ -407,7 +447,7 @@ def job_view(o: Any) -> JobView:
         kind=str(_get(o, "kind", "")),
         status=status,
         progress=None if prog_f is None else max(0.0, min(100.0, prog_f)),
-        message=str(_get(o, "message", "") or ""),
+        message=localize_job_message(str(_get(o, "message", "") or "")),
         log_tail=str(tail or ""),
         params=params if isinstance(params, dict) else {},
         created_at=_get(o, "created_at"),
@@ -481,6 +521,60 @@ def cancel_job(job_id: str) -> str:
             return t("This job cannot be interrupted midway, it will finish by itself shortly.")
         return t("Cannot cancel the job: {error}", error=type(e).__name__)
     return ""
+
+
+# ---------------------------------------------------------------------------- examples
+@dataclass(frozen=True)
+class SearchExamples:
+    """Examples for placeholders and empty states, taken from the indexed collection (always real, always clickable)."""
+
+    ds: str  # the first document (natural order) that has numbered clauses
+    refs: tuple[tuple[str, str], ...]  # (kind, unit_id): its first clause and, if it has one, its first table
+    phrases: tuple[str, ...]  # short clause headings offered as questions and phrases
+
+    def locator(self, kind: str, unit_id: str) -> str:
+        """``Section 3.5`` / ``pkt 3.5`` in the current language, from the profile's locators."""
+        tpl = C.LOCATORS.get(current(), C.LOCATORS["en"]).get(kind, "{id}")
+        return tpl.format(id=unit_id)
+
+    @property
+    def clause(self) -> str:
+        """``<doc label> <locator of the first clause>``, e.g. ``NIST SP 800-30 Section 2.1``."""
+        kind, uid = self.refs[0]
+        return f"{C.doc_label(self.ds)} {self.locator(kind, uid)}"
+
+
+_HEADING = re.compile(r"^[^\W\d_][^\d]{2,60}$")
+
+
+def search_examples() -> SearchExamples | None:
+    """None for an empty knowledge base; the queries touch one document plus a bounded scan of headings."""
+    try:
+        with open_db() as conn:
+            docs = [r[0] for r in conn.execute("SELECT DISTINCT doc_id FROM units WHERE kind='clause' AND dup_index=0")]
+            if not docs:
+                return None
+            ds = min(docs, key=dotted_key)
+            refs: list[tuple[str, str]] = []
+            for kind in ("clause", "table"):
+                r = conn.execute(
+                    "SELECT unit_id FROM units WHERE doc_id=? AND kind=? AND dup_index=0 ORDER BY seq LIMIT 1",
+                    (ds, kind),
+                ).fetchone()
+                if r:
+                    refs.append((kind, r[0]))
+            phrases: list[str] = []
+            for (title,) in conn.execute(
+                "SELECT title FROM units WHERE kind='clause' AND dup_index=0 AND title IS NOT NULL ORDER BY seq LIMIT 400"
+            ):
+                words = str(title).split()
+                if 2 <= len(words) <= 6 and _HEADING.match(str(title)) and title not in phrases:
+                    phrases.append(str(title))
+                if len(phrases) == 2:
+                    break
+    except sqlite3.Error:
+        return None
+    return SearchExamples(ds, tuple(refs), tuple(phrases))
 
 
 # ---------------------------------------------------------------------------- citations

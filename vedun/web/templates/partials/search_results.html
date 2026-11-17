@@ -4,20 +4,25 @@
 {% if result is none %}
   <div class="card">
     {% call m.empty('search', _('Ask a question or enter a number'), _('Results appear here as evidence cards: with a citation to paste, the verbatim text and where the result came from.')) %}
+      {% set ex = examples() %}
+      {% if ex %}
       <div class="chips chips-center">
         {% if form.mode == 'lookup' %}
-          <a class="chip chip-link mono" href="/search?mode=lookup&ds=3-26&ref=2.3.1">{{ _("3-26 · Section 2.3.1") }}</a>
-          <a class="chip chip-link mono" href="/search?mode=lookup&ds=2-81&ref=Tab.%202.1">{{ _("2-81 · Table 2.1") }}</a>
+          {% for kind, uid in ex.refs %}
+          <a class="chip chip-link mono" href="{{ url_with('/search', {}, mode='lookup', ds=ex.ds, ref=uid) }}">{{ ex.ds }} · {{ ex.locator(kind, uid) }}</a>
+          {% endfor %}
         {% elif form.mode == 'fulltext' %}
-          <a class="chip chip-link" href="/search?mode=fulltext&q=storage+height">storage height</a>
-          <a class="chip chip-link mono" href="/search?mode=fulltext&syntax=fts5&q=cylind*">cylind*</a>
+          {% for p in ex.phrases %}
+          {% set q = '"' ~ p ~ '"' if loop.index == 2 else p %}
+          <a class="chip chip-link {{ 'mono' if loop.index == 2 }}" href="{{ url_with('/search', {}, mode='fulltext', q=q, syntax=('fts5' if loop.index == 2 else 'safe')) }}">{{ q }}</a>
+          {% endfor %}
         {% else %}
-          {% set ex1 = _("maximum storage height") %}
-          {% set ex2 = _("inspection interval") %}
-          <a class="chip chip-link" href="{{ url_with('/search', {}, mode='hybrid', q=ex1) }}">{{ ex1 }}</a>
-          <a class="chip chip-link" href="{{ url_with('/search', {}, mode='hybrid', q=ex2) }}">{{ ex2 }}</a>
+          {% for p in ex.phrases %}
+          <a class="chip chip-link" href="{{ url_with('/search', {}, mode='hybrid', q=p) }}">{{ p }}</a>
+          {% endfor %}
         {% endif %}
       </div>
+      {% endif %}
     {% endcall %}
   </div>
 

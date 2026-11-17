@@ -2,7 +2,12 @@
 {% import "_macros.html" as m %}
 {% block title %}{{ _("Citations in repo") }}{% endblock %}
 {% block content %}
-{{ m.page_header(_("Citations in repo"), _("Checks that every document reference in your notes (for example “{example}”) points to an existing unit in the current edition of the document.", example=_("{doc} Section 2.3.1", doc=doc_label("3-26")))) }}
+{% set ex = examples() %}
+{% if ex %}
+{{ m.page_header(_("Citations in repo"), _("Checks that every document reference in your notes (for example “{example}”) points to an existing unit in the current edition of the document.", example=ex.clause)) }}
+{% else %}
+{{ m.page_header(_("Citations in repo"), _("Checks that every document reference in your notes points to an existing unit in the current edition of the document.")) }}
+{% endif %}
 
 <section class="card" aria-labelledby="h-run">
   <div class="card-head"><h2 id="h-run">{{ _("Run a check") }}</h2></div>

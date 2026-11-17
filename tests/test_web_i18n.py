@@ -322,3 +322,60 @@ def test_english_plural_and_formats(monkeypatch):
     assert W.fmt_int(1234567) == "1,234,567" and W.fmt_usd(1.5) == "1.50 USD" and W.fmt_bytes(1536) == "1.5 kB"
     monkeypatch.setattr(C, "UI_LANGUAGE", "pl")
     assert W.fmt_int(1234567) == "1 234 567" and W.fmt_usd(1.5) == "1,50 USD" and W.fmt_bytes(1536) == "1,5 kB"
+
+
+# ------------------------------------------------------------------ job messages (stored in English)
+@pytest.mark.parametrize(
+    ("message", "polish"),
+    [
+        ("added 3, replaced 0, removed 0, unchanged 2", "dodano 3, zastąpiono 0, usunięto 0, bez zmian 2"),
+        (
+            "Dry run: added 1, replaced 0, removed 0, unchanged 0",
+            "Próba (dry run): dodano 1, zastąpiono 0, usunięto 0, bez zmian 0",
+        ),
+        (
+            "Cancelled: added 1, replaced 0, removed 0, skipped 1 (9-8), failed 1: 9-7",
+            "Anulowano: dodano 1, zastąpiono 0, usunięto 0, pominięto 1 (9-8), nieudane 1: 9-7",
+        ),
+        ("Done", "Zakończono"),
+        ("Interrupted by a service restart", "Przerwane przez restart usługi"),
+        ("Catalog: 222 documents ({'current': 222})", "Katalog: 222 dokumentów ({'current': 222})"),
+        ("Checked 25/40 files", "Sprawdzono 25/40 plików"),
+        ("12 citations in 3 files: {'OK': 12}", "12 cytowań w 3 plikach: {'OK': 12}"),
+        ("[9-9] converting 9-9_202601.pdf", "[9-9] converting 9-9_202601.pdf"),  # progress lines stay as logged
+    ],
+)
+def test_job_messages_are_english_and_translated_in_polish(monkeypatch, message, polish):
+    monkeypatch.setattr(C, "UI_LANGUAGE", "en")
+    assert W.localize_job_message(message) == message
+    monkeypatch.setattr(C, "UI_LANGUAGE", "pl")
+    assert W.localize_job_message(message) == polish
+
+
+# ------------------------------------------------------------------ search examples come from the collection
+EXAMPLE_PAGES = ["/", "/search?mode=lookup", "/search?mode=fulltext", "/search?mode=hybrid", "/citations"]
+
+
+@pytest.mark.parametrize("path", EXAMPLE_PAGES)
+def test_examples_come_from_the_indexed_collection(english, path):
+    ex = W.search_examples()
+    assert ex is not None and ex.refs and ex.refs[0][0] == "clause"
+    html = english.get(path).text
+    assert "3-26" not in html and "storage height" not in html and "2-81" not in html
+    assert ex.ds in html or (ex.phrases and ex.phrases[0] in html), path
+
+
+def test_lookup_example_links_open_a_real_unit(english):
+    ex = W.search_examples()
+    kind, uid = ex.refs[0]
+    hit = english.get(f"/search?mode=lookup&ds={ex.ds}&ref={uid}").text
+    assert "not found" not in hit.lower() and ex.locator(kind, uid) in hit
+
+
+@pytest.mark.parametrize("path", EXAMPLE_PAGES)
+def test_an_empty_collection_renders_without_examples(english, monkeypatch, path):
+    from vedun.web import routes
+
+    monkeypatch.setitem(routes.templates.env.globals, "examples", lambda: None)
+    r = english.get(path)
+    assert r.status_code == 200 and "3-26" not in r.text

@@ -211,7 +211,7 @@ def test_exhausted_budget_makes_search_bm25_only_and_calls_nothing_external(clie
     assert r.status_code == 200
     body = r.json()
     assert body["budget_exhausted"] is True and body["hits"]
-    assert any("dzienny budżet API wyczerpany" in n for n in body["notes"])
+    assert any("daily API budget used up" in n for n in body["notes"])
     assert body["hits"][0]["retrieval"]["final_ranker"] == "bm25" and not body["hits"][0]["retrieval"]["vector"]
     assert body["rerank_error"] is None and body["reranked"] is False
     s = client.get("/api/stats").json()
@@ -221,7 +221,7 @@ def test_exhausted_budget_makes_search_bm25_only_and_calls_nothing_external(clie
 def test_exhausted_budget_fails_sync_fast_but_allows_dry_run(client):
     _spend(3.0)
     j = wait_job(client, client.post("/api/jobs/sync").json()["job_id"])
-    assert j["status"] == "failed" and "dzienny budżet API wyczerpany" in j["error"]
+    assert j["status"] == "failed" and "daily API budget used up" in j["error"]
     assert (
         wait_job(client, client.post("/api/jobs/sync", data={"dry_run": "true"}).json()["job_id"])["status"] == "done"
     )
