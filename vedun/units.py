@@ -201,7 +201,7 @@ def parse_markdown(md: str, ds: str | None = None, edition: str | None = None) -
     cur: Unit | None = None
     page = 0
     seen: dict[str, int] = {}
-    last_clause: str | None = None
+    last_owner: str | None = None  # last clause or appendix: parent of the tables and figures that follow it
     uncaptioned: dict[int, int] = {}
     last_unit: Unit | None = None  # last clause/appendix unit: owner of text after tables/figures
     blk_lines = [0, 0]  # 1-based file line range of the block being processed
@@ -210,15 +210,17 @@ def parse_markdown(md: str, ds: str | None = None, edition: str | None = None) -
     body_line0 = md[: len(md) - len(body)].count("\n")  # lines before the body in the file
 
     def start(unit_id: str, kind: str, title: str, text: str, caption_or_extra: dict | None = None) -> None:
-        nonlocal cur, last_clause, last_unit
+        nonlocal cur, last_owner, last_unit
         n = seen.get(unit_id, 0)
         seen[unit_id] = n + 1
+        # an appendix is a top-level part of the document, never a child of the clause printed before it
+        parent = parent_id(unit_id) if kind == "clause" else None if kind == "appendix" else last_owner
         cur = Unit(
             ds=ds,
             edition=edition,
             unit_id=unit_id,
             kind=kind,
-            parent=parent_id(unit_id) if kind == "clause" else last_clause,
+            parent=parent,
             title=title,
             text=text,
             page_start=page,
@@ -232,8 +234,8 @@ def parse_markdown(md: str, ds: str | None = None, edition: str | None = None) -
         units.append(cur)
         if kind in ("clause", "appendix"):
             last_unit = cur
+            last_owner = unit_id
         if kind == "clause":
-            last_clause = unit_id
             if unit_id[0].isdigit():
                 seq[0] = unit_id
 

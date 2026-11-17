@@ -689,7 +689,8 @@ def toc(
             level[r["unit_id"]] = len(anc)
             par[r["unit_id"]] = anc[-1] if anc else None
         else:
-            p = r["parent"] if r["parent"] in known else None
+            # a table or figure hangs under its clause or appendix (appendices themselves are top level)
+            p = r["parent"] if r["parent"] in known or r["parent"] in level else None
             level[r["unit_id"]] = (level.get(p, -1) + 1) if p else 0
             par[r["unit_id"]] = p
     nkids: dict[str, int] = {}
