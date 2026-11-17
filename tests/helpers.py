@@ -75,8 +75,8 @@ A. First lettered item.
 B. Second lettered item.
 """
 
-# edition 2: 2.3.2.1 -> 2.3.4.1.1 (renumbered, text identical), 2.3.2.4 edited, 2.3.2.2 removed,
-# Table 9a -> Table 2.11.1.1 (same content), new clause 2.3.4.2.
+# edition 2: 2.3.2.1 -> 2.3.7.1.1 (renumbered, text identical), 2.3.2.4 edited, 2.3.2.2 removed,
+# Table 9a -> Table 2.15.1.1 (same content), new clause 2.3.7.2.
 BODY_V2 = """<!-- page: 2 -->
 
 ## 1.0 SCOPE
@@ -91,13 +91,13 @@ April 2027. Renumbered clauses.
 
 ### 2.3 Protection
 
-2.3.4.1.1 Treat storage of stacked scaffold boards up to 2 m (6.5 ft) high as incidental to the workshop occupancy.
+2.3.7.1.1 Treat storage of stacked scaffold boards up to 2 m (6.5 ft) high as incidental to the workshop occupancy.
 
 <!-- page: 3 -->
 
 2.3.2.3 Provide a battery reserve for 90 minutes with a safety margin included in the load.
 
-**Table 2.11.1.1. Door maintenance schedule**
+**Table 2.15.1.1. Door maintenance schedule**
 
 | Item | Frequency |
 |---|---|
@@ -110,7 +110,7 @@ April 2027. Renumbered clauses.
 
 2.3.2.4 Limit paint stock to 60 kg (132 lb) per cabinet.
 
-2.3.4.2 A brand new requirement about something entirely different and unrelated.
+2.3.7.2 A brand new requirement about something entirely different and unrelated.
 """
 
 

@@ -22,13 +22,13 @@ from vedun.units import (
 
 
 def test_clause_ids():
-    assert parent_id("2.3.4.1.6") == "2.3.4.1"
+    assert parent_id("2.3.7.1.6") == "2.3.7.1"
     assert parent_id("2.4") == "2.0"
     assert parent_id("2.0") is None
     assert parent_id("Table 2.4.1.4.1") is None
-    assert clause_depth("1.0") == 1 and clause_depth("2.3.4.1.6") == 5
-    assert canonical_clause(" 2.3.4.1.6. ") == "2.3.4.1.6"
-    assert canonical_table("Tab. 2.11.1.1") == "Table 2.11.1.1"
+    assert clause_depth("1.0") == 1 and clause_depth("2.3.7.1.6") == 5
+    assert canonical_clause(" 2.3.7.1.6. ") == "2.3.7.1.6"
+    assert canonical_table("Tab. 2.15.1.1") == "Table 2.15.1.1"
     assert canonical_table("table 2.4.1.4.1.") == "Table 2.4.1.4.1"
     assert canonical_figure("Fig. 2.4.3.1.1.1") == "Figure 2.4.3.1.1.1"
     assert sorted(["2.10", "2.2", "2.3.1"], key=sort_key) == ["2.2", "2.3.1", "2.10"]
@@ -38,7 +38,7 @@ def test_fts_sanitize_never_breaks_match():
     nasty = [
         'AND OR NOT "unterminated NEAR( * -x: col:foo',
         "limit cieczy palnych w strefie KR-2",
-        "2.3.4.1.6",
+        "2.3.7.1.6",
         "()",
         "",
         '"',
@@ -46,13 +46,13 @@ def test_fts_sanitize_never_breaks_match():
     ]
     db = sqlite3.connect(":memory:")
     db.execute("CREATE VIRTUAL TABLE t USING fts5(x, tokenize='porter unicode61')")
-    db.execute("INSERT INTO t VALUES('limit 2 3 4 1 6 cieczy kr 2')")
+    db.execute("INSERT INTO t VALUES('limit 2 3 7 1 6 cieczy kr 2')")
     for q in nasty:
         s = sanitize_fts(q)
         if s:
             db.execute("SELECT rowid FROM t WHERE t MATCH ?", (s,)).fetchall()  # must not raise
-    assert sanitize_fts("2.3.4.1.6") == '"2 3 4 1 6"'
-    assert db.execute("SELECT count(*) FROM t WHERE t MATCH ?", (sanitize_fts("2.3.4.1.6"),)).fetchone()[0] == 1
+    assert sanitize_fts("2.3.7.1.6") == '"2 3 7 1 6"'
+    assert db.execute("SELECT count(*) FROM t WHERE t MATCH ?", (sanitize_fts("2.3.7.1.6"),)).fetchone()[0] == 1
     assert "AND" not in sanitize_fts("foo AND bar").replace(" OR ", "")
     assert sanitize_fts("") == ""
 
@@ -69,19 +69,19 @@ def test_rrf_fusion():
 @pytest.mark.parametrize(
     ("text", "expected"),
     [
-        ("Zgodnie z ACME ASC 3-26 pkt 2.3.4.1.6 limit wynosi 45 kg.", [("3-26", "2.3.4.1.6")]),
-        ("Patrz ASC 2-81 Tab. 2.11.1.1 (przeglad).", [("2-81", "Table 2.11.1.1")]),
-        ("Code Part 5-32 Section 2.4.3.2.3.6 requires 30 s.", [("5-32", "2.4.3.2.3.6")]),
-        ("ASC 7-39 pkt 2.2.5.2 / 2.2.5.2.1 dotyczy ladowania", [("7-39", "2.2.5.2"), ("7-39", "2.2.5.2.1")]),
+        ("Zgodnie z ACME ASC 21-4 pkt 2.3.7.1.6 limit wynosi 45 kg.", [("21-4", "2.3.7.1.6")]),
+        ("Patrz ASC 22-6 Tab. 2.15.1.1 (przeglad).", [("22-6", "Table 2.15.1.1")]),
+        ("Code Part 25-3 Section 2.4.3.2.3.6 requires 30 s.", [("25-3", "2.4.3.2.3.6")]),
+        ("ASC 23-1 pkt 2.2.7.2 / 2.2.7.2.1 dotyczy przegladu", [("23-1", "2.2.7.2"), ("23-1", "2.2.7.2.1")]),
         ("ACME ASC 8-22 tab. 2.4.1.4.1 podaje odstepy", [("8-22", "Table 2.4.1.4.1")]),
         (
-            "ACME ASC 3-26 pkt 2.3.4.1.1 i 2.3.4.1.2, oraz ASC 4-9 pkt 2.2.8.1",
-            [("3-26", "2.3.4.1.1"), ("3-26", "2.3.4.1.2"), ("4-9", "2.2.8.1")],
+            "ACME ASC 21-4 pkt 2.3.7.1.1 i 2.3.7.1.2, oraz ASC 24-7 pkt 2.2.9.1",
+            [("21-4", "2.3.7.1.1"), ("21-4", "2.3.7.1.2"), ("24-7", "2.2.9.1")],
         ),
-        ("ASC 2-81 Tab. 9a (stare oznaczenie)", [("2-81", "Table 9a")]),
-        ("ASC 3-26 pkt 2.3.2.1, 1.5 m od palnych", [("3-26", "2.3.2.1")]),
+        ("ASC 22-6 Tab. 9a (stare oznaczenie)", [("22-6", "Table 9a")]),
+        ("ASC 21-4 pkt 2.3.2.1, 1.5 m od palnych", [("21-4", "2.3.2.1")]),
         ("nic tu nie ma, ASC bez numeru", []),
-        ("Safety ASC 7-111A pkt 2.1.1 oraz ASC 4-1N pkt 2.2", [("7-111A", "2.1.1"), ("4-1N", "2.2")]),
+        ("Safety ASC 27-11A pkt 2.1.1 oraz ASC 4-1N pkt 2.2", [("27-11A", "2.1.1"), ("4-1N", "2.2")]),
     ],
 )
 def test_citation_regex(text, expected):
@@ -90,9 +90,9 @@ def test_citation_regex(text, expected):
 
 
 def test_citation_edition_and_line_numbers():
-    text = "linia 1\nASC 7-39 (April 2025) pkt 2.2.1 (parkowanie), 2.2.5.1 (ladowanie)\n"
+    text = "linia 1\nASC 23-1 (April 2025) pkt 2.2.1 (magazyn), 2.2.7.1 (przeglad)\n"
     cs = extract_citations(text)
-    assert [(c.line, c.unit_id, c.cited_edition) for c in cs] == [(2, "2.2.1", "2025-04"), (2, "2.2.5.1", "2025-04")]
+    assert [(c.line, c.unit_id, c.cited_edition) for c in cs] == [(2, "2.2.1", "2025-04"), (2, "2.2.7.1", "2025-04")]
 
 
 def test_split_text_overlap_and_table_header_repeat():
@@ -167,7 +167,7 @@ def test_pdf_name_with_letter_suffix():
 
     from vedun.convert import parse_pdf_name
 
-    assert parse_pdf_name(Path("7-111A_202610.pdf")) == ("7-111A", "2026-10")
+    assert parse_pdf_name(Path("27-11A_202610.pdf")) == ("27-11A", "2026-10")
     assert parse_pdf_name(Path("4-1N_202504.pdf")) == ("4-1N", "2025-04")
 
 
@@ -188,7 +188,7 @@ def test_sheet_without_numbered_clauses_is_kept_whole():
         "The regional cost index is based on rates.",
     ]
     normal = doc(item("text", "Contents"), item("section_header", "1.0 SCOPE"), item("text", "Applies to all."))
-    assert [b.text for b in blocks_from_docling(normal, "T", "3-26")] == ["1.0 SCOPE", "Applies to all."]
+    assert [b.text for b in blocks_from_docling(normal, "T", "21-4")] == ["1.0 SCOPE", "Applies to all."]
 
 
 def test_glued_paragraph_is_split_at_clause_numbers():
@@ -334,7 +334,7 @@ def test_parse_ref_keeps_a_table_variant_in_parentheses():
 
     assert parse_ref("Tab. 2.4.1.1.2.1(a)") == "Table 2.4.1.1.2.1(a)"
     assert parse_ref("(Tab. 2.3.1.6A)")[:6] != "Table ("  # a wrapping parenthesis is not part of the id
-    assert parse_ref("pkt 2.3.4.1.6).") == "2.3.4.1.6"
+    assert parse_ref("pkt 2.3.7.1.6).") == "2.3.7.1.6"
 
 
 def test_embedding_model_from_config_uses_its_own_endpoint_key_and_estimated_cost(tmp_path, monkeypatch):

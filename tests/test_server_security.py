@@ -100,7 +100,7 @@ def test_dashboard_in_process_calls_work_without_external_credentials(raw_client
     """/documents shows catalog-only rows only if the dashboard's own GET /api/collection got through the auth layer."""
     K.fetch_catalog(source=FakeSource())
     page = raw_client.get("/documents", headers=BASIC)
-    assert page.status_code == 200 and "5-32" in page.text
+    assert page.status_code == 200 and "25-3" in page.text
 
 
 def test_internal_token_is_not_guessable(raw_client):

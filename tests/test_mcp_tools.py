@@ -417,7 +417,7 @@ def test_documents_pagination(client, monkeypatch):
 
 
 def test_check_citations(client):
-    text = "see ASC 9-9 pkt 2.3.2.4, ASC 9-9 pkt 9.9.9 and ASC 3-26 pkt 1.1.1"
+    text = "see ASC 9-9 pkt 2.3.2.4, ASC 9-9 pkt 9.9.9 and ASC 21-4 pkt 1.1.1"
     r = call(client, "kb_check_citations", {"text": text})
     sc = r["structuredContent"]
     assert sc["total"] == 3 and sc["all_ok"] is False

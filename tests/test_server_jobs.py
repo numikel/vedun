@@ -120,7 +120,7 @@ def test_upload_validation(client, server_kb):
         == 400
     )
     assert client.post("/api/jobs/sync", files=[("files", pdf), ("files", pdf)]).status_code == 400  # duplicate names
-    assert client.post("/api/jobs/sync", data={"only": "3-26; ../x"}).status_code == 400
+    assert client.post("/api/jobs/sync", data={"only": "21-4; ../x"}).status_code == 400
     assert not list((server_kb.pdf_dir / ".incoming").glob("*.pdf"))  # nothing left staged after the refusals
 
 

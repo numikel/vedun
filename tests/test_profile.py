@@ -54,14 +54,14 @@ def test_neutral_defaults_carry_no_corpus_names(reload, tmp_path):
     from vedun.evidence import make_citation
 
     reload({})
-    assert C.DEFAULT_RERANKER is None and C.doc_label("3-26") == "3-26"
+    assert C.DEFAULT_RERANKER is None and C.doc_label("21-4") == "21-4"
     assert (
-        make_citation("3-26", "Storage", None, "2026-10", "table", "Table 2.1", "pl")
-        == "3-26 „Storage” (2026-10), Tab. 2.1"
+        make_citation("21-4", "Storage", None, "2026-10", "table", "Table 2.1", "pl")
+        == "21-4 „Storage” (2026-10), Tab. 2.1"
     )
-    pdf = make_pdf(tmp_path / "3-26_202610.pdf", [(50, 60, "October 2026")], title="ASC 3-26 Storage (Code Part)")
+    pdf = make_pdf(tmp_path / "21-4_202610.pdf", [(50, 60, "October 2026")], title="ASC 21-4 Storage (Code Part)")
     assert edition_label(pdf, "2026-10")[1].startswith("derived from file name")  # no rules: file name, even if printed
-    assert pdf_title(pdf, "3-26") == "ASC 3-26 Storage (Code Part)"  # nothing stripped without a profile
+    assert pdf_title(pdf, "21-4") == "ASC 21-4 Storage (Code Part)"  # nothing stripped without a profile
 
 
 def test_profile_drives_citation_label_and_title(reload, tmp_path):

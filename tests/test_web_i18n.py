@@ -361,7 +361,8 @@ def test_examples_come_from_the_indexed_collection(english, path):
     ex = W.search_examples()
     assert ex is not None and ex.refs and ex.refs[0][0] == "clause"
     html = english.get(path).text
-    assert "3-26" not in html and "storage height" not in html and "2-81" not in html
+    # the former fixed examples are gone (corpus-specific numbers are checked by the opt-in neutral-wording scan)
+    assert "storage height" not in html and "inspection interval" not in html and "Table 2.1.1 · Fig." not in html
     assert ex.ds in html or (ex.phrases and ex.phrases[0] in html), path
 
 
@@ -378,4 +379,4 @@ def test_an_empty_collection_renders_without_examples(english, monkeypatch, path
 
     monkeypatch.setitem(routes.templates.env.globals, "examples", lambda: None)
     r = english.get(path)
-    assert r.status_code == 200 and "3-26" not in r.text
+    assert r.status_code == 200 and "mode=lookup&amp;ds=" not in r.text  # no example link without a collection
