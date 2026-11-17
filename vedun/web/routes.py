@@ -144,6 +144,7 @@ def _install_env() -> None:
         source_name=source_label,
         corpus_name=lambda: C.CORPUS_NAME,
         doc_label=C.doc_label,
+        examples=W.search_examples,
         LOOKUP_PREFIXES=LOOKUP_PREFIXES,
         LANG_NAMES=I.LANG_NAMES,
         UI_LANGUAGES=C.UI_LANGUAGES,

@@ -270,7 +270,7 @@ def start() -> None:
         try:
             conn.execute(
                 "UPDATE jobs SET status='failed', finished_at=?, error='interrupted by a restart of the service', "
-                "message='Przerwane przez restart usługi' WHERE status IN ('queued','running')",
+                "message='Interrupted by a service restart' WHERE status IN ('queued','running')",
                 (_now(),),
             )
         finally:
@@ -360,11 +360,11 @@ def _run(job: JobInfo) -> None:
         stopped = isinstance(result, dict) and bool(result.get("cancelled"))
         job.status = "cancelled" if stopped else "done"
         job.progress = job.progress if stopped else 1.0
-        job.message = str(result.get("summary") or "Zakończono") if isinstance(result, dict) else "Zakończono"
+        job.message = str(result.get("summary") or "Done") if isinstance(result, dict) else "Done"
     except Exception as e:  # noqa: BLE001 - a job must never kill the worker
         job.status = "failed"
         job.error = f"{type(e).__name__}: {str(e)[:500]}"
-        job.message = f"Błąd: {str(e)[:200]}"
+        job.message = f"Error: {str(e)[:200]}"
         job.log_tail = [*job.log_tail, *traceback.format_exc().strip().splitlines()[-4:]][-LOG_TAIL_LINES:]
     job.finished_at = _now()
     job.cost_usd = round(max(0.0, budget.process_total() - cost0), 6)
@@ -391,7 +391,7 @@ def _run_catalog_refresh(ctx: JobContext, params: dict[str, Any]) -> dict[str, A
     src = K.load_source()
     ctx.log(f"GET {src.name} document catalog")
     cat = K.fetch_catalog(force=True, source=src)
-    ctx.progress(0.6, f"Pobrano katalog: {len(cat.entries)} dokumentów")
+    ctx.progress(0.6, f"Catalog fetched: {len(cat.entries)} documents")
     filled = 0
     conn = D.connect()
     try:
@@ -402,7 +402,7 @@ def _run_catalog_refresh(ctx: JobContext, params: dict[str, Any]) -> dict[str, A
     counts = K.counts_by_status(rows)
     ctx.log(f"statuses: {counts}; source_item_id filled for {filled} indexed document(s)")
     return {
-        "summary": f"Katalog: {len(cat.entries)} dokumentów ({counts})",
+        "summary": f"Catalog: {len(cat.entries)} documents ({counts})",
         "fetched_at": cat.fetched_at,
         "n_entries": len(cat.entries),
         "counts": counts,
@@ -437,11 +437,11 @@ def _run_check_citations(ctx: JobContext, params: dict[str, Any]) -> dict[str, A
     try:
         for i, f in enumerate(files, start=1):
             if ctx.cancelled():  # nothing is stored: a partial scan must not become "the latest citations"
-                msg = f"Anulowano po {i - 1}/{len(files)} plikach; wyniki nie zostały zapisane"
+                msg = f"Cancelled after {i - 1}/{len(files)} files; results were not saved"
                 return {"summary": msg, "cancelled": True, "repo": str(root), "n_files": len(files)}
             rows += [r.to_dict() for r in check_files(conn, [f], root)]
             if i % 25 == 0 or i == len(files):
-                ctx.progress(i / max(1, len(files)), f"Sprawdzono {i}/{len(files)} plików")
+                ctx.progress(i / max(1, len(files)), f"Checked {i}/{len(files)} files")
     finally:
         conn.close()
     counts = {s: sum(r["status"] == s for r in rows) for s in ("OK", "UNKNOWN UNIT", "DOCUMENT NOT INDEXED")}
@@ -456,7 +456,7 @@ def _run_check_citations(ctx: JobContext, params: dict[str, Any]) -> dict[str, A
     finally:
         sc.close()
     return {
-        "summary": f"{len(rows)} cytowań w {len(files)} plikach: {counts}",
+        "summary": f"{len(rows)} citations in {len(files)} files: {counts}",
         "repo": str(root),
         "n_files": len(files),
         "n_citations": len(rows),
@@ -494,9 +494,7 @@ def _run_sync(ctx: JobContext, params: dict[str, Any]) -> dict[str, Any]:
     dry = bool(params.get("dry_run"))
     notes: list[str] = []
     if not dry and not params.get("no_embed") and budget.exhausted():
-        raise RuntimeError(
-            f"{budget.EXHAUSTED_MESSAGE} ({S.daily_budget_usd():.2f} USD): synchronizacja wymaga embeddingów"
-        )
+        raise RuntimeError(f"{budget.EXHAUSTED_MESSAGE} ({S.daily_budget_usd():.2f} USD): sync needs embeddings")
 
     # 1. PDFs uploaded through the API (staged in <pdf_dir>/.incoming): move next to the others
     new_files: dict[str, str] = {}  # ds -> new PDF file name (uploaded or downloaded)
@@ -627,17 +625,17 @@ def _run_sync(ctx: JobContext, params: dict[str, Any]) -> dict[str, Any]:
     n_rep = sum(r.action == "replaced" for r in res.results) if not dry else len(plan.replace)
     for ds, fname in pending.items():
         notes.append(f"{ds}: {fname} stays in the PDF folder (the older edition too); run sync again to index it")
-    failed_txt = f", nieudane {len(res.failed)}: {', '.join(res.failed)}" if res.failed else ""
+    failed_txt = f", failed {len(res.failed)}: {', '.join(res.failed)}" if res.failed else ""
     if res.cancelled:
         head = ", ".join(res.skipped[:8]) + (", …" if len(res.skipped) > 8 else "")
         summary = (
-            f"Anulowano: dodano {n_add}, zastąpiono {n_rep}, usunięto {len(res.removed)}, "
-            f"pominięto {len(res.skipped)}{f' ({head})' if res.skipped else ''}{failed_txt}"
+            f"Cancelled: added {n_add}, replaced {n_rep}, removed {len(res.removed)}, "
+            f"skipped {len(res.skipped)}{f' ({head})' if res.skipped else ''}{failed_txt}"
         )
     else:
         summary = (
-            f"{'Próba (dry run): ' if dry else ''}dodano {n_add}, zastąpiono {n_rep}, "
-            f"usunięto {len(plan.remove)}, bez zmian {len(plan.unchanged)}{failed_txt}"
+            f"{'Dry run: ' if dry else ''}added {n_add}, replaced {n_rep}, "
+            f"removed {len(plan.remove)}, unchanged {len(plan.unchanged)}{failed_txt}"
         )
     return {
         "summary": summary,

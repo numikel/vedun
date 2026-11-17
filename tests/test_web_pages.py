@@ -378,8 +378,10 @@ def test_job_card_offers_anuluj_only_where_a_cancel_can_work(db_env, monkeypatch
     assert "/cancel" not in no_safe_point  # running refresh: no safe point, so no button to promise anything
     done = card(FakeJob(status="done", finished_at="2026-11-10T10:05:00", progress=1.0))
     assert "/cancel" not in done and "Zakończone" in done
-    gone = card(FakeJob(status="cancelled", finished_at="2026-11-10T10:05:00", message="Anulowano: dodano 1"))
-    assert "Anulowane" in gone and "Anulowano: dodano 1" in gone and "/cancel" not in gone
+    msg = "Cancelled: added 1, replaced 0, removed 0, skipped 1 (9-8)"
+    gone = card(FakeJob(status="cancelled", finished_at="2026-11-10T10:05:00", message=msg))
+    assert "Anulowane" in gone and "Anulowano: dodano 1, zastąpiono 0, usunięto 0, pominięto 1 (9-8)" in gone
+    assert "/cancel" not in gone
     old_module = types.SimpleNamespace(get_job=lambda jid: FakeJob(), list_jobs=lambda limit=50: [])
     monkeypatch.setattr(W, "jobs_module", lambda: old_module)  # an older jobs module without the feature
     assert "/cancel" not in TestClient(make_app()).get("/sync/jobs/j-1", headers=HX).text

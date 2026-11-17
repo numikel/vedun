@@ -229,8 +229,8 @@ def test_search_budget_exhausted_falls_back_to_bm25_and_never_calls_a_paid_api(c
     assert r["isError"] is False
     assert sc["budget_exhausted"] is True and sc["mode"] == "bm25" and sc["reranker"] in (None, "")
     assert "2.3.2.4" in ids(r)
-    assert any("dzienny budżet API wyczerpany" in d for d in sc["degraded"])
-    assert "dzienny budżet API wyczerpany" in text_of(r)
+    assert any("daily API budget used up" in d for d in sc["degraded"])
+    assert "daily API budget used up" in text_of(r)
     assert no_paid == []  # neither an embedder nor a reranker was even constructed
 
 

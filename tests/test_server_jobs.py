@@ -257,7 +257,7 @@ def test_cancel_running_sync_stops_between_sheets(client, server_kb, gated_sheet
     assert j["status"] == "cancelled" and j["error"] is None and j["cancel_requested"] is False
     assert j["result"]["cancelled"] is True and j["result"]["skipped"] == ["9-8"]
     assert [x["doc_id"] for x in j["result"]["results"]] == ["9-7"]
-    assert j["message"].startswith("Anulowano") and "pominięto 1 (9-8)" in j["message"]
+    assert j["message"].startswith("Cancelled: added 1") and "skipped 1 (9-8)" in j["message"]
     assert j["finished_at"] and j["progress"] < 1.0
     assert j["cost_usd"] is not None and j["api_calls"] is not None  # cost of the finished part is still recorded
     assert client.get("/api/collection/9-7").json()["indexed_edition"] == "2026-10"  # finished work stays
@@ -383,7 +383,7 @@ def test_cancel_check_citations_stores_no_partial_results(client, server_kb, mon
     assert client.post(f"/api/jobs/{jid}/cancel").status_code == 202
     gate.open()
     j = wait_final(client, jid)
-    assert j["status"] == "cancelled" and "nie zostały zapisane" in j["message"]
+    assert j["status"] == "cancelled" and "results were not saved" in j["message"]
     assert client.get("/api/citations/latest").status_code == 404  # a partial scan never becomes "the latest"
 
 

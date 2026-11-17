@@ -15,16 +15,17 @@
           hx-get="/search" hx-target="#results" hx-swap="outerHTML" hx-push-url="true" hx-indicator="#results-loading">
       <input type="hidden" name="mode" value="{{ form.mode }}">
 
+      {% set ex = examples() %}
       {% if form.mode == 'lookup' %}
       <div class="form-row">
         <div class="field">
           <label for="f-ds">{{ _("Document number") }}</label>
-          <input id="f-ds" class="input mono" name="ds" value="{{ form.ds }}" list="ds-list" placeholder="3-26" autocomplete="off" inputmode="text">
+          <input id="f-ds" class="input mono" name="ds" value="{{ form.ds }}" list="ds-list" placeholder="{{ ex.ds if ex }}" autocomplete="off" inputmode="text">
           <datalist id="ds-list">{% for s in sheets %}<option value="{{ s.doc_id }}">{{ s.title }}</option>{% endfor %}</datalist>
         </div>
         <div class="field grow">
           <label for="f-ref">{{ _("Clause, table or figure number") }}</label>
-          <input id="f-ref" class="input mono" name="ref" value="{{ form.ref }}" placeholder="{{ _('Section 2.3.1 · Table 2.1.1 · Fig. 2.1.1') }}" autocomplete="off">
+          <input id="f-ref" class="input mono" name="ref" value="{{ form.ref }}" placeholder="{% if ex %}{% for kind, uid in ex.refs %}{{ ' · ' if not loop.first }}{{ ex.locator(kind, uid) }}{% endfor %}{% endif %}" autocomplete="off">
         </div>
         <div class="field field-btn"><button class="btn btn-primary" type="submit">{{ m.icon('search') }}<span>{{ _("Find") }}</span></button></div>
       </div>
@@ -39,7 +40,7 @@
         <div class="field grow">
           <label for="f-q">{{ _('Full-text query') if form.mode == 'fulltext' else _('Question or phrase (PL or EN)') }}</label>
           <div class="input-icon">{{ m.icon('search') }}<input id="f-q" class="input {{ 'mono' if form.mode == 'fulltext' and form.syntax == 'fts5' }}" type="search" name="q" value="{{ form.q }}" autocomplete="off"
-            placeholder="{{ '"permanently connected" NOT hybrid' if form.mode == 'fulltext' else _('maximum storage height') }}"></div>
+            placeholder="{{ (('"' ~ ex.phrases[0] ~ '"') if form.mode == 'fulltext' else ex.phrases[0]) if ex and ex.phrases else _('Ask a question in your own words') }}"></div>
         </div>
         <div class="field field-btn"><button class="btn btn-primary" type="submit">{{ m.icon('search') }}<span>{{ _("Search") }}</span></button></div>
       </div>

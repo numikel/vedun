@@ -98,8 +98,11 @@ PL: dict[str, str] = {
     # ---- overview
     "Local knowledge base: {corpus}.": "Lokalna baza wiedzy: {corpus}.",
     "Quick search": "Szybkie wyszukiwanie",
-    "e.g. maximum storage height": "np. maksymalna wysokość składowania",
-    "{doc} Section 2.3.1": "{doc} pkt 2.3.1",
+    "e.g. {example}": "np. {example}",
+    "Ask a question in your own words": "Zadaj pytanie własnymi słowami",
+    "Hybrid search (BM25 + vectors). Works in Polish and English.": (
+        "Wyszukiwanie hybrydowe (BM25 + wektory). Działa po polsku i po angielsku."
+    ),
     "Hybrid search (BM25 + vectors). Works in Polish and English. A document and clause number in the query "
     "(e.g. {example}) gives an exact hit.": (
         "Wyszukiwanie hybrydowe (BM25 + wektory). Działa po polsku i po angielsku. Numer dokumentu i punktu "
@@ -299,7 +302,6 @@ PL: dict[str, str] = {
     "Search form": "Formularz wyszukiwania",
     "Document number": "Numer dokumentu",
     "Clause, table or figure number": "Numer punktu, tabeli lub rysunku",
-    "Section 2.3.1 · Table 2.1.1 · Fig. 2.1.1": "pkt 2.3.1 · Tab. 2.1.1 · rys. 2.1.1",
     "Find": "Znajdź",
     "Show sub-units": "Pokaż jednostki podrzędne",
     "Show neighboring numbers": "Pokaż sąsiednie numery",
@@ -308,7 +310,6 @@ PL: dict[str, str] = {
     ),
     "Full-text query": "Zapytanie pełnotekstowe",
     "Question or phrase (PL or EN)": "Pytanie lub fraza (PL albo EN)",
-    "maximum storage height": "maksymalna wysokość składowania",
     "Document": "Dokument",
     "All documents": "Wszystkie dokumenty",
     "Unit kind": "Rodzaj jednostki",
@@ -342,9 +343,6 @@ PL: dict[str, str] = {
         "Wyniki pojawią się tutaj jako karty dowodowe: z cytowaniem do wklejenia, dosłownym tekstem i informacją, "
         "skąd wziął się wynik."
     ),
-    "3-26 · Section 2.3.1": "3-26 · pkt 2.3.1",
-    "2-81 · Table 2.1": "2-81 · Tab. 2.1",
-    "inspection interval": "okres między przeglądami",
     "Query:": "Zapytanie:",
     "The query is not valid.": "Zapytanie nie jest poprawne.",
     "Switch the syntax to “Safe” or fix the expression (see the “Query syntax” help).": (
@@ -516,6 +514,11 @@ PL: dict[str, str] = {
     "the current edition of the document.": (
         "Sprawdza, czy każde powołanie na dokument w Twoich notatkach (na przykład „{example}”) wskazuje istniejący "
         "punkt w bieżącej edycji dokumentu."
+    ),
+    "Checks that every document reference in your notes points to an existing unit in the current edition of the "
+    "document.": (
+        "Sprawdza, czy każde powołanie na dokument w Twoich notatkach wskazuje istniejący punkt w bieżącej edycji "
+        "dokumentu."
     ),
     "Run a check": "Uruchom sprawdzenie",
     "Repository folder (optional)": "Katalog repozytorium (opcjonalnie)",

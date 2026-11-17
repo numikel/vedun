@@ -328,7 +328,7 @@ def search(
     budget.flush()
     if over_budget:
         r.notes.append(
-            f"{budget.EXHAUSTED_MESSAGE} ({S.daily_budget_usd():.2f} USD): wyniki tylko z BM25, bez embeddingów i rerankingu"
+            f"{budget.EXHAUSTED_MESSAGE} ({S.daily_budget_usd():.2f} USD): BM25 only, no embeddings, no reranking"
         )
     out = _dump(r)
     out["budget_exhausted"] = over_budget

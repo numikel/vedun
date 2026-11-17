@@ -71,4 +71,4 @@ def exhausted() -> bool:
     return spent_today() >= S.daily_budget_usd()
 
 
-EXHAUSTED_MESSAGE = "dzienny budżet API wyczerpany"
+EXHAUSTED_MESSAGE = "daily API budget used up"
