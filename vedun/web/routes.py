@@ -529,14 +529,14 @@ def search_page(request: Request) -> HTMLResponse:
         try:
             if mode == "lookup" and form["ref"]:
                 ds, refs = form["ds"], [r.strip() for r in re.split(r"[;\n]+", form["ref"]) if r.strip()]
-                if not ds:  # "3-26 pkt 2.3.1" typed into the ref box
+                if not ds:  # "4-12 pkt 2.3.1" typed into the ref box
                     dss, ids = kb.route_query(form["ref"])
                     if dss:
                         ds, refs = dss[0], ids or refs
                 if not ds:
                     result = {
                         "kind": "error",
-                        "message": t("Enter a document number (e.g. 3-26) or type it together with the clause number."),
+                        "message": t("Enter a document number (e.g. 4-12) or type it together with the clause number."),
                     }
                 else:
                     resp = kb.lookup(conn, ds, refs, include_children=form["children"], neighbors=form["neighbors"])

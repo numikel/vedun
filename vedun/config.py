@@ -43,7 +43,7 @@ DEFAULT_PDF_DIR = _env_path("PDF_DIR", ROOT / "pdf")
 #: Document id as it appears in file names and citations [doc_id_pattern]; no capturing groups.
 #: File names are ``<id>_<YYYYMM>.pdf`` (edition = year + month).
 DOC_ID_PATTERN = r"\d{1,2}-\d{1,3}[A-Z]?"
-#: Text before the id in a citation ("Document 3-26") [citation_prefix_pattern]; no capturing groups.
+#: Text before the id in a citation ("Document 4-12") [citation_prefix_pattern]; no capturing groups.
 CITATION_PREFIX_PATTERN = r"(?:Doc(?:ument)?\.?)"
 #: Whole-line page furniture to drop during conversion, regexes, case-insensitive [boilerplate_patterns].
 #: The running header (a line holding only the document id) and "Page N" are always dropped.
@@ -266,8 +266,8 @@ _UNIT_KINDS = {"clause", "table", "figure", "appendix"}
 
 
 def doc_label(doc_id: str) -> str:
-    """A document named as the profile wants it in running text: ``ASC 3-26`` with ``"doc_label": "ASC {doc_id}"``,
-    ``3-26`` by default (``doc_label``)."""
+    """A document named as the profile wants it in running text: ``ASC 4-12`` with ``"doc_label": "ASC {doc_id}"``,
+    ``4-12`` by default (``doc_label``)."""
     return DOC_LABEL.format(doc_id=doc_id)
 
 

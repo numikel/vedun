@@ -372,8 +372,8 @@ PL: dict[str, str] = {
         "Reranker nie zadziałał, zachowano kolejność z fuzji RRF."
     ),
     "A document named in the query is not indexed.": "Dokument wymieniony w zapytaniu nie jest zindeksowany.",
-    "Enter a document number (e.g. 3-26) or type it together with the clause number.": (
-        "Podaj numer dokumentu (np. 3-26) albo wpisz go razem z numerem punktu."
+    "Enter a document number (e.g. 4-12) or type it together with the clause number.": (
+        "Podaj numer dokumentu (np. 4-12) albo wpisz go razem z numerem punktu."
     ),
     "Search failed: {error}": "Wyszukiwanie nie powiodło się: {error}",
     # ---- sync page and jobs

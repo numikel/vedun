@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import os
 import re
+from pathlib import Path
 
 import pytest
 from fastapi.testclient import TestClient
@@ -70,6 +71,24 @@ def test_no_publisher_wording_in_static_files():
     for name in ("js/app.js", "css/app.css"):
         text = (STATIC_DIR / name).read_text(encoding="utf-8")
         assert not PUBLISHER.search(text), (name, PUBLISHER.search(text))
+
+
+@needs_words
+def test_no_publisher_wording_in_code_docs_skills_and_tool_descriptions():
+    """Examples in docstrings, MCP tool descriptions, docs and skills are what agents and readers see."""
+    root = Path(__file__).resolve().parent.parent
+    files = [
+        *(root / "vedun").rglob("*.py"),
+        *(root / "vedun").rglob("*.html"),
+        *(root / "docs").rglob("*.md"),
+        *(root / "skills").rglob("*.md"),
+        root / "AGENTS.md",
+        root / "README.md",
+    ]
+    hits = [
+        (f.relative_to(root).as_posix(), m.group(0)) for f in files for m in PUBLISHER.finditer(f.read_text("utf-8"))
+    ]
+    assert not hits, hits[:10]
 
 
 def test_catalog_wording_names_the_configured_source(db_env, monkeypatch, tmp_path):  # noqa: F811

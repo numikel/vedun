@@ -41,7 +41,7 @@ SAME_ORIGIN = [Depends(require_same_origin)]
 
 DsStr = Annotated[str, StringConstraints(pattern=S.SHEET_RE)]
 KindStr = Literal["clause", "table", "figure", "appendix"]
-DsPath = Annotated[str, PathParam(pattern=S.SHEET_RE, description="document id, e.g. 3-26")]
+DsPath = Annotated[str, PathParam(pattern=S.SHEET_RE, description="document id, e.g. 4-12")]
 JOB_ID = r"^[0-9a-f]{12}$"
 STATUSES = ("current", "outdated", "missing_locally", "withdrawn", "unknown")
 
