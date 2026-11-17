@@ -18,7 +18,9 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        os: [ubuntu-latest, windows-latest, macos-latest]
+        # macOS runs on pull requests only: every change passes it before merging, and a push to main no longer
+        # fails when GitHub has no macOS runner free ("job was not acquired", three times on 2026-11-17)
+        os: ${{ fromJSON(github.event_name == 'pull_request' && '["ubuntu-latest","windows-latest","macos-latest"]' || '["ubuntu-latest","windows-latest"]') }}
     runs-on: ${{ matrix.os }}
     env:
       # the runner's preinstalled macOS Python is built without loadable SQLite extensions (sqlite-vec needs them)
