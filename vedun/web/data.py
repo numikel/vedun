@@ -218,7 +218,7 @@ def url_with(path: str, params: dict[str, Any], **changes: Any) -> str:
 
 
 def dotted_key(ds: str) -> tuple[Any, ...]:
-    """Natural sort key for document ids (``2-81`` < ``3-26`` < ``10-1``)."""
+    """Natural sort key for document ids (``2-9`` < ``4-12`` < ``10-1``)."""
     m = re.match(r"^(\d+)-(\d+)(.*)$", ds)
     return (int(m.group(1)), int(m.group(2)), m.group(3)) if m else (10**6, 0, ds)
 

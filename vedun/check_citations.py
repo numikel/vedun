@@ -19,9 +19,9 @@ from .units import canonical_clause
 
 
 def anchor_re() -> re.Pattern[str]:
-    """Document anchor of a citation: ``<prefix> <id>`` ("Doc 3-26"); both parts come from the corpus profile.
+    """Document anchor of a citation: ``<prefix> <id>`` ("Doc 4-12"); both parts come from the corpus profile.
 
-    The prefix is case-insensitive; the id keeps its own case, so "Doc 3-26a" anchors 3-26, not a document "3-26a".
+    The prefix is case-insensitive; the id keeps its own case, so "Doc 4-12a" anchors 4-12, not a document "4-12a".
     """
     return re.compile(rf"(?i:{C.CITATION_PREFIX_PATTERN})\s*({C.DOC_ID_PATTERN})(?![\d])")
 
@@ -70,7 +70,7 @@ class Citation:
     line: int
     ds: str
     unit_id: str
-    text: str  # as written, e.g. "Doc 3-26 clause 2.3.1"
+    text: str  # as written, e.g. "Doc 4-12 clause 2.3.1"
     cited_edition: str | None = None
 
 

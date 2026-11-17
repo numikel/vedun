@@ -221,7 +221,7 @@ def source_name() -> str | None:
 
 
 def dotted_key(ds: str) -> tuple[int, int, str]:
-    """Natural sort key: ``2-81`` < ``3-26`` < ``7-111`` < ``7-111A`` < ``10-1``."""
+    """Natural sort key: ``2-9`` < ``4-12`` < ``11-7`` < ``11-7A`` < ``12-1``."""
     m = re.match(r"^(\d+)-(\d+)(.*)$", ds)
     return (int(m.group(1)), int(m.group(2)), m.group(3)) if m else (10**6, 0, ds)
 

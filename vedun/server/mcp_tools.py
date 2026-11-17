@@ -69,7 +69,7 @@ MAX_QUOTE = 3_000
 CURSOR_VERSION = 1
 
 # ============================================================================ argument types
-DocIdArg = Annotated[str, Field(pattern=S.SHEET_RE, description='Document id as cited, e.g. "3-26" or "7-39".')]
+DocIdArg = Annotated[str, Field(pattern=S.SHEET_RE, description='Document id as cited, e.g. "4-12" or "11-7".')]
 CursorArg = Annotated[
     str | None,
     Field(
@@ -482,7 +482,7 @@ def _cut_point(text: str, start: int, budget: int) -> int:
 
 LOOKUP_DESC = (
     "Exact lookup of ONE KNOWN clause, table, figure or appendix of a document; returns its verbatim text "
-    'with full provenance. Use when document and unit are already known: doc_id="3-26", ref="Section 2.3.1" (also "2.3.1", '
+    'with full provenance. Use when document and unit are already known: doc_id="4-12", ref="Section 2.3.1" (also "2.3.1", '
     '"pkt 2.3.1", "Table 2.1.1", "Tab. 2.1.1", "Fig. 2.1.1", "rys. 2.1.1", "Appendix A"). Several units of one document: '
     "refs=[...] (max 20). Deterministic: no fuzzy matching, no network, no cost. An unknown id is a normal result "
     "(found=false) listing the nearest ids and, after a document revision, 'possibly renumbered to' candidates. "
@@ -676,7 +676,7 @@ def kb_fulltext(
         str, Field(min_length=1, max_length=500, description='Words or an FTS5 expression, e.g. "25 mm".')
     ],
     doc_id: Annotated[
-        DocIdFilter, Field(description='Restrict to document(s), e.g. "3-26" or ["3-26","7-39"].')
+        DocIdFilter, Field(description='Restrict to document(s), e.g. "4-12" or ["4-12","11-7"].')
     ] = None,
     kind: Annotated[KindFilter, Field(description="Restrict to unit kind(s).")] = None,
     syntax: Annotated[
@@ -1156,8 +1156,8 @@ def kb_documents(
 
 # ============================================================================ citations
 CITATIONS_DESC = (
-    f"Validate the document citations found in a text (e.g. '{C.doc_label('3-26')} Section 2.3.1', "
-    f"'{C.doc_label('2-81')} Table 2.1.1', Polish or English forms) against the CURRENT editions: OK / UNKNOWN UNIT (with the "
+    f"Validate the document citations found in a text (e.g. '{C.doc_label('4-12')} Section 2.3.1', "
+    f"'{C.doc_label('11-7')} Table 2.1.1', Polish or English forms) against the CURRENT editions: OK / UNKNOWN UNIT (with the "
     "nearest or the probably renumbered ids) / DOCUMENT NOT INDEXED. Use on a draft before it leaves, or on old notes. "
     "It checks that the cited unit exists, not that the quoted content is right (kb_verify_quote does that). "
     "Text up to 50000 characters; the result is paged (next_cursor)."

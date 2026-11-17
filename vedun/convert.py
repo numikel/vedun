@@ -69,7 +69,7 @@ def sha256_file(path: Path) -> str:
 
 
 def parse_pdf_name(path: Path) -> tuple[str, str]:
-    """``3-26_202610.pdf`` -> (``3-26``, ``2026-10``); the id pattern comes from the corpus profile."""
+    """``4-12_202610.pdf`` -> (``4-12``, ``2026-10``); the id pattern comes from the corpus profile."""
     m = config.pdf_name_re().match(path.name)
     if not m:
         raise ValueError(f"unexpected document file name: {path.name}")

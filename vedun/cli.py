@@ -46,7 +46,7 @@ def build_parser() -> argparse.ArgumentParser:
 
     def add_sync_args(sp: argparse.ArgumentParser) -> None:
         sp.add_argument("--pdf-dir", type=Path, default=C.DEFAULT_PDF_DIR)
-        sp.add_argument("--only", nargs="*", help="limit to these document ids, e.g. 3-26 2-81")
+        sp.add_argument("--only", nargs="*", help="limit to these document ids, e.g. 4-12 11-7")
         sp.add_argument(
             "--text-models", help="comma list of model keys for text chunks (default: config.TEXT_MODEL_KEYS = i1)"
         )
