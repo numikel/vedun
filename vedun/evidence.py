@@ -138,7 +138,7 @@ def evidence_from_rows(
     kind = u["kind"]
     anchor = u["unit_id"] if kind == "clause" else (u["parent"] or "")
     chain = ancestors(known_ids[ds], anchor) + ([anchor] if anchor and anchor in known_ids[ds] else [])
-    if kind != "clause" and not chain:
+    if kind in ("table", "figure") and not chain:
         why["parent_path"] = "table/figure appears before any numbered clause"
     titles = {}
     if chain:

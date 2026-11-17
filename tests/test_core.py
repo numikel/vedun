@@ -132,6 +132,20 @@ def test_multi_page_block_keeps_page_end():
     assert (a.page_start, a.page_end) == (4, 5) and (b.page_start, b.page_end) == (5, 5)
 
 
+def test_appendix_is_top_level_and_owns_the_figures_and_tables_after_it():
+    body = (
+        "## 3.3 Last clause\n\nText.\n\n**Table 3.1. In the clause**\n\n| a | b |\n|---|---|\n| 1 | 2 |\n\n"
+        "## APPENDIX C DETAILED PROCEDURES\n\nProcedure text.\n\n**Figure C.1. In the appendix**\n\n"
+        "![x](figures/fig_p009_01.png)\n\n**Table C.1. Also in the appendix**\n\n| c | d |\n|---|---|\n| 3 | 4 |\n"
+    )
+    _f, units = parse_markdown(make_md("9-9", "2026-10", body))
+    by = {u.unit_id: u for u in units}
+    assert by["Appendix C"].parent is None  # was "3.3": the clause printed before the appendix
+    assert by["Table 3.1"].parent == "3.3"
+    assert by["Figure C.1"].parent == "Appendix C" and by["Table C.1"].parent == "Appendix C"
+    assert "Procedure text." in by["Appendix C"].text
+
+
 def test_fast_table_documents_default_and_config_override(tmp_path, monkeypatch):
     from vedun import config, convert
 
