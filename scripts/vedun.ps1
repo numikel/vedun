@@ -14,7 +14,7 @@ param(
 )
 $ErrorActionPreference = 'Stop'
 
-$Version = '0.1.0'
+$Version = '0.1.1'
 $Dir = $PSScriptRoot
 $Port = if ($env:VEDUN_PORT) { $env:VEDUN_PORT } else { '8765' }
 $Url = "http://127.0.0.1:$Port"
