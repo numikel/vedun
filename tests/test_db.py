@@ -103,23 +103,23 @@ def test_replace_leaves_no_row_of_old_edition(env):
     d = r2.diff
     assert d is not None
     ren = {r.old_id: r.new_id for r in d.renumbered}
-    assert ren.get("2.3.2.1") == "2.3.4.1.1"
-    assert ren.get("Table 9a") == "Table 2.11.1.1"
-    assert "2.3.2.2" in d.removed and "2.3.4.2" in d.added
+    assert ren.get("2.3.2.1") == "2.3.7.1.1"
+    assert ren.get("Table 9a") == "Table 2.15.1.1"
+    assert "2.3.2.2" in d.removed and "2.3.7.2" in d.added
     assert any(c.unit_id == "2.3.2.4" and "[-45-]" in c.diff for c in d.changed)
     assert "Renumbered clauses" in d.changes_section
     # old citation now resolves to a suggestion
     res = validate(conn, extract_citations("ASC 9-9 pkt 2.3.2.1 and ASC 9-9 Tab. 9a"))
     assert [r.status for r in res] == ["UNKNOWN UNIT", "UNKNOWN UNIT"]
-    assert "2.3.4.1.1" in res[0].suggestion and "Table 2.11.1.1" in res[1].suggestion
+    assert "2.3.7.1.1" in res[0].suggestion and "Table 2.15.1.1" in res[1].suggestion
 
 
 def test_plan_sync_accepts_letter_suffix_sheets(env):
     conn, pdf_dir, _dirs, _tmp = env
-    for name in ("7-111A_202610.pdf", "4-1N_202504.pdf", "9-9_202610.pdf"):
+    for name in ("27-11A_202610.pdf", "4-1N_202504.pdf", "9-9_202610.pdf"):
         _put_pdf(pdf_dir, name)
     plan = D.plan_sync(conn, pdf_dir)
-    assert sorted(plan.add) == ["4-1N", "7-111A", "9-9"] and not plan.warnings
+    assert sorted(plan.add) == ["27-11A", "4-1N", "9-9"] and not plan.warnings
 
 
 def test_writer_connection_has_large_page_cache(env):
@@ -268,11 +268,11 @@ def test_doctor_flags_stale_files_and_orphans(env):
 
 def test_doctor_compares_db_with_pdf_folder(env):
     conn, pdf_dir, dirs, _tmp = env
-    _put_pdf(pdf_dir, "7-111A_202610.pdf")
-    _put_pdf(pdf_dir, "ASC 3-26 copy.pdf")
+    _put_pdf(pdf_dir, "27-11A_202610.pdf")
+    _put_pdf(pdf_dir, "ASC 21-4 copy.pdf")
     probs = D.doctor(conn, dirs["md"], dirs["fig"], pdf_dir=pdf_dir)
-    assert "PDF 7-111A_202610.pdf: not indexed" in probs
-    assert "PDF ASC 3-26 copy.pdf: unexpected file name, sync ignores it" in probs
+    assert "PDF 27-11A_202610.pdf: not indexed" in probs
+    assert "PDF ASC 21-4 copy.pdf: unexpected file name, sync ignores it" in probs
 
 
 def test_reuse_converted_copies_figures_whose_caption_has_brackets(env, monkeypatch):
@@ -441,7 +441,7 @@ CREATE TABLE renames(ds TEXT NOT NULL, old_edition TEXT, new_edition TEXT NOT NU
 CREATE VIRTUAL TABLE IF NOT EXISTS units_fts USING fts5(title, text, uid, ds UNINDEXED, edition UNINDEXED,
     tokenize = 'porter unicode61 remove_diacritics 2');
 INSERT INTO meta VALUES('schema_version', '3');
-INSERT INTO sheets(ds, edition, title, fm_item_id) VALUES('9-9', '2026-10', 'Paint', 'GUID-1');
+INSERT INTO sheets(ds, edition, title, fm_item_id) VALUES('9-9', '2026-10', 'Tools', 'GUID-1');
 INSERT INTO sheet_models VALUES('9-9', '2026-10', 'i1', 'text', 'x', 4, 'complete', 1, 1, NULL);
 INSERT INTO units(id, ds, edition, unit_id, kind, text) VALUES(7, '9-9', '2026-10', '2.3.2.4', 'clause', 'Limit paint');
 INSERT INTO chunks(id, ds, edition, unit_row, chunk_no, text) VALUES(11, '9-9', '2026-10', 7, 0, 'Limit paint');
@@ -477,7 +477,7 @@ def test_migrate_schema_3_keeps_every_row_and_vector(tmp_path):
     assert not any(n.endswith("__v4") for n in names)
     assert conn.execute("SELECT value FROM meta WHERE key='schema_version'").fetchone()[0] == D.SCHEMA_VERSION
     doc = conn.execute("SELECT doc_id, title, source_item_id FROM documents").fetchone()
-    assert tuple(doc) == ("9-9", "Paint", "GUID-1")
+    assert tuple(doc) == ("9-9", "Tools", "GUID-1")
     for table in ("document_models", "units", "chunks", "renames"):
         assert conn.execute(f"SELECT doc_id FROM {table}").fetchone()[0] == "9-9", table
     fts = conn.execute("SELECT rowid, doc_id FROM units_fts WHERE units_fts MATCH 'paint'").fetchall()

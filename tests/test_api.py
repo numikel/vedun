@@ -39,15 +39,15 @@ def kb(tmp_path, monkeypatch):
 @pytest.mark.parametrize(
     ("raw", "expected"),
     [
-        ("2.3.4.1.6", "2.3.4.1.6"),
-        ("pkt 2.3.4.1.6", "2.3.4.1.6"),
-        ("Pkt. 2.3.4.1.6.", "2.3.4.1.6"),
-        ("punkt 2.3.4.1.6", "2.3.4.1.6"),
-        ("Section 2.3.4.1.6", "2.3.4.1.6"),
-        ("clause 2.3.4.1.6", "2.3.4.1.6"),
-        ("Tab. 2.11.1.1", "Table 2.11.1.1"),
-        ("Table 2.11.1.1", "Table 2.11.1.1"),
-        ("tabela 2.11.1.1", "Table 2.11.1.1"),
+        ("2.3.7.1.6", "2.3.7.1.6"),
+        ("pkt 2.3.7.1.6", "2.3.7.1.6"),
+        ("Pkt. 2.3.7.1.6.", "2.3.7.1.6"),
+        ("punkt 2.3.7.1.6", "2.3.7.1.6"),
+        ("Section 2.3.7.1.6", "2.3.7.1.6"),
+        ("clause 2.3.7.1.6", "2.3.7.1.6"),
+        ("Tab. 2.15.1.1", "Table 2.15.1.1"),
+        ("Table 2.15.1.1", "Table 2.15.1.1"),
+        ("tabela 2.15.1.1", "Table 2.15.1.1"),
         ("Fig. 2.4.3.1.1.1", "Figure 2.4.3.1.1.1"),
         ("rys. 2.4.3.1.1.1", "Figure 2.4.3.1.1.1"),
         ("Figure 3.3.3.4.A", "Figure 3.3.3.4.A"),
@@ -61,8 +61,8 @@ def test_forgiving_ref_parsing(raw, expected):
 
 
 def test_route_query_finds_sheet_and_ids():
-    assert route_query("co mowi ASC 3-26 pkt 2.3.4.1.6") == (["3-26"], ["2.3.4.1.6"])
-    assert route_query("ASC 2-81 Tab. 2.11.1.1 i Table 2.11.2.1") == (["2-81"], ["Table 2.11.1.1", "Table 2.11.2.1"])
+    assert route_query("co mowi ASC 21-4 pkt 2.3.7.1.6") == (["21-4"], ["2.3.7.1.6"])
+    assert route_query("ASC 22-6 Tab. 2.15.1.1 i Table 2.15.2.1") == (["22-6"], ["Table 2.15.1.1", "Table 2.15.2.1"])
     assert route_query("limit cieczy palnych 1.5 m od 10,800 ft2") == ([], [])  # numbers are not ids
 
 

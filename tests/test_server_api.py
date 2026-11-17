@@ -27,12 +27,12 @@ def test_collection_lists_indexed_and_catalog_entries(client, server_kb, tmp_pat
     body = client.get("/api/collection").json()
     by = {s["doc_id"]: s for s in body["documents"]}
     assert by["9-9"]["catalog_status"] == "current" and by["9-9"]["source_item_id"]
-    assert by["5-32"]["catalog_status"] == "missing_locally" and not by["5-32"]["indexed"]
+    assert by["25-3"]["catalog_status"] == "missing_locally" and not by["25-3"]["indexed"]
     assert body["counts"]["current"] == 1 and body["total"] == len(body["documents"]) == 6
     assert [
         s["doc_id"]
         for s in client.get("/api/collection", params={"status": "missing_locally", "q": "plant"}).json()["documents"]
-    ] == ["5-32"]
+    ] == ["25-3"]
     assert client.get("/api/stats").json()["catalog"]["missing_locally"] == 5
     one = client.get("/api/collection/9-9").json()
     assert one["kinds"]["clause"] > 0 and one["pages"] == 3

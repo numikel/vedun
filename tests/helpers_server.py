@@ -24,20 +24,20 @@ CSRF = {"X-Requested-With": "vedun"}
 
 
 _ENTRIES = [  # (id, title, published): six documents of a remote catalog
-    ("2-81", "Fire Door Inspection and Upkeep", "April 2026"),
-    ("3-26", "Paint Storage in Workshops", "October 2026"),
-    ("4-9", "Emergency Lighting Circuits", "April 2025"),
-    ("5-32", "Plant Rooms and Adjoining Spaces", "July 2026"),
-    ("6-0", "Ladders and Access Platforms", "January 2001"),
-    ("7-111I", "Scaffold Board Treatments", "January 2022"),
+    ("22-6", "Gate Inspection and Upkeep", "April 2026"),
+    ("21-4", "Tool Storage in Workshops", "October 2026"),
+    ("24-7", "Emergency Lighting Circuits", "April 2025"),
+    ("25-3", "Plant Rooms and Adjoining Spaces", "July 2026"),
+    ("26-0", "Ladders and Access Platforms", "January 2001"),
+    ("27-11I", "Scaffold Board Treatments", "January 2022"),
 ]
 
 
 def fake_catalog(as_ds: str = "9-9") -> K.Catalog:
-    """Six entries; 3-26 (October 2026) renamed to ``as_ds`` so that it matches the test DB's 9-9 2026-10."""
+    """Six entries; 21-4 (October 2026) renamed to ``as_ds`` so that it matches the test DB's 9-9 2026-10."""
     cat = K.Catalog()
     for i, (ds, title, published) in enumerate(_ENTRIES):
-        ds = as_ds if ds == "3-26" else ds
+        ds = as_ds if ds == "21-4" else ds
         item = f"{i:08X}-0000-4000-8000-000000000000"
         cat.entries[ds] = K.CatalogEntry(ds, title, item, published, K.edition_from_published(published))
     return cat

@@ -17,15 +17,15 @@ def test_edition_from_published(label, ed):
 
 
 def test_status_current_outdated_missing_withdrawn(tmp_path):
-    cat = fake_catalog("3-26")
-    (tmp_path / "3-26_202510.pdf").write_bytes(b"%PDF-1")  # older than the source -> outdated
-    (tmp_path / "2-81_202604.pdf").write_bytes(b"%PDF-1")  # as new -> current
+    cat = fake_catalog("21-4")
+    (tmp_path / "21-4_202510.pdf").write_bytes(b"%PDF-1")  # older than the source -> outdated
+    (tmp_path / "22-6_202604.pdf").write_bytes(b"%PDF-1")  # as new -> current
     (tmp_path / "1-1_202001.pdf").write_bytes(b"%PDF-1")  # not in the catalog -> withdrawn
     by = {s.doc_id: s for s in K.catalog_status(None, cat, tmp_path)}
-    assert by["3-26"].status == "outdated" and by["3-26"].local_edition == "2025-10"
-    assert by["2-81"].status == "current"
+    assert by["21-4"].status == "outdated" and by["21-4"].local_edition == "2025-10"
+    assert by["22-6"].status == "current"
     assert by["1-1"].status == "withdrawn"
-    assert by["5-32"].status == "missing_locally"
+    assert by["25-3"].status == "missing_locally"
     assert K.counts_by_status(list(by.values())) == {"outdated": 1, "current": 1, "withdrawn": 1, "missing_locally": 4}
     assert [s.status for s in K.catalog_status(None, None, tmp_path)] == ["unknown"] * 3  # no snapshot yet
 
@@ -46,7 +46,7 @@ def test_cache_roundtrip_and_empty_catalog_is_refused(tmp_path, monkeypatch):
 def test_entries_a_source_must_not_hand_over_are_dropped(tmp_path, monkeypatch):
     """The id and edition become a file name: a hostile or buggy source cannot point outside the PDF folder."""
     monkeypatch.setattr(C, "STATE_DIR", tmp_path / "state")
-    cat = fake_catalog("3-26")
+    cat = fake_catalog("21-4")
     bad = {
         "../x": K.CatalogEntry("../x", "t", "g", None, None),
         "1-1": K.CatalogEntry("1-1", "t", "g", "May 2020", "2020-5"),
@@ -54,7 +54,7 @@ def test_entries_a_source_must_not_hand_over_are_dropped(tmp_path, monkeypatch):
     }
     cat.entries.update(bad)
     got = K.fetch_catalog(source=FakeSource(catalog=cat))
-    assert set(got.entries) == set(fake_catalog("3-26").entries)
+    assert set(got.entries) == set(fake_catalog("21-4").entries)
     assert len(got.warnings) == 3 and all("dropped" in w for w in got.warnings)
     with pytest.raises(ValueError, match="refusing file name"):
         K.download_pdf(K.CatalogEntry("1-1/../../x", "t", "g", None, "2026-01"), tmp_path, FakeSource())
@@ -106,24 +106,24 @@ def test_profile_resolves_the_plugin_next_to_the_file_that_names_it(tmp_path, mo
 
 
 def test_download_validates_pdf_and_never_deletes(tmp_path):
-    cat = fake_catalog("3-26")
-    old = tmp_path / "3-26_202510.pdf"
+    cat = fake_catalog("21-4")
+    old = tmp_path / "21-4_202510.pdf"
     old.write_bytes(b"%PDF-old")
     src = FakeSource(pdf=b"%PDF-1.7 new")
-    rep = K.download_updates(tmp_path, catalog=cat, only=["3-26"], source=src)
-    assert [d.doc_id for d in rep.downloaded] == ["3-26"] and not rep.errors and src.downloads == ["3-26"]
+    rep = K.download_updates(tmp_path, catalog=cat, only=["21-4"], source=src)
+    assert [d.doc_id for d in rep.downloaded] == ["21-4"] and not rep.errors and src.downloads == ["21-4"]
     new = tmp_path / rep.downloaded[0].file
-    assert new.name == "3-26_202610.pdf" and rep.downloaded[0].replaces == [old.name]
+    assert new.name == "21-4_202610.pdf" and rep.downloaded[0].replaces == [old.name]
     assert old.exists()  # the old edition stays until the caller retires it
     assert not list(tmp_path.glob("*.part"))
-    assert K.retire_old_pdfs(tmp_path, "3-26", new.name) == [old.name]
+    assert K.retire_old_pdfs(tmp_path, "21-4", new.name) == [old.name]
     assert not old.exists() and new.exists()
 
 
 def test_download_rejects_a_non_pdf_and_keeps_going(tmp_path):
-    cat = fake_catalog("3-26")
-    (tmp_path / "3-26_202510.pdf").write_bytes(b"%PDF-old")
-    (tmp_path / "2-81_202504.pdf").write_bytes(b"%PDF-old")
+    cat = fake_catalog("21-4")
+    (tmp_path / "21-4_202510.pdf").write_bytes(b"%PDF-old")
+    (tmp_path / "22-6_202504.pdf").write_bytes(b"%PDF-old")
     src = FakeSource(pdf=[b"<html>login</html>", b"%PDF-ok"])
     rep = K.download_updates(tmp_path, catalog=cat, source=src)
     assert len(rep.errors) == 1 and len(rep.downloaded) == 1 and len(src.downloads) == 2
