@@ -16,7 +16,25 @@ edition, and a quote can be checked against the PDF before it goes into a mail o
 - **Local first.** Your documents, the database and all files stay on your machine. Only embeddings (and the optional
   reranker) call an online API, and only if you give it a key.
 
+![Search by meaning: the hit shows the document, clause, verbatim text and a ready-to-paste citation](docs/images/search.png)
+
 > Status: early release (v0.1). The interface may still change. Feedback and issues are welcome.
+
+<table>
+  <tr>
+    <td width="33%"><a href="docs/images/lookup.png"><img src="docs/images/lookup.png" alt="Exact lookup by clause number"></a></td>
+    <td width="33%"><a href="docs/images/overview.png"><img src="docs/images/overview.png" alt="Overview of the knowledge base"></a></td>
+    <td width="33%"><a href="docs/images/connect.png"><img src="docs/images/connect.png" alt="MCP connection settings for AI agents"></a></td>
+  </tr>
+  <tr>
+    <td><b>Exact lookup</b>: a clause by its number, with its edition and citation</td>
+    <td><b>Overview</b>: what is indexed, the last sync and the API cost</td>
+    <td><b>MCP connection</b>: ready-made settings for Claude Code and other agents</td>
+  </tr>
+</table>
+
+<sub>Screenshots show a demo collection of three public-domain NIST Special Publications (SP 800-30, 800-34,
+800-61).</sub>
 
 ## Install
 
@@ -52,8 +70,7 @@ If PowerShell says that running scripts is disabled, allow local scripts for you
 (run in the install folder); `doctor` and `uninstall` are macOS/Linux only for now.
 
 **With an AI agent.** Ask your coding agent: *"Install vedun from github.com/numikel/vedun, follow AGENTS.md"*. The
-repository ships [`AGENTS.md`](AGENTS.md) and three skills in [`skills/`](skills/) (`vedun-install`,
-`vedun-add-documents`, `vedun-doctor`) that walk an agent through installation, adding documents and troubleshooting.
+agent reads [`AGENTS.md`](AGENTS.md) and follows the `vedun-install` skill (see [Agent skills](#agent-skills)).
 
 ## First steps
 
@@ -96,6 +113,42 @@ The MCP endpoint is `http://127.0.0.1:8765/mcp`; it needs the API key the instal
 The server offers ten read-only tools (`kb_lookup`, `kb_search`, `kb_fulltext`, `kb_verify_quote`, …; the prefix is
 configurable). Their descriptions tell the agent which one to use: a known clause number → `kb_lookup`, an exact phrase
 or number → `kb_fulltext`, a descriptive question → `kb_search`, before quoting → `kb_verify_quote`.
+
+## Agent skills
+
+The repository ships three **skills** in [`skills/`](skills/): folders with a `SKILL.md` file that teach an AI coding
+agent (Claude Code, Codex, Copilot, Cursor, …) one vedun task step by step. The agent asks you the questions that
+matter (with a recommended answer), runs the commands, checks the result and explains each step in plain words. It
+never asks you to paste a key into the chat: keys go into your secret store through `vedun keys` in your own terminal.
+
+| Skill | Use it when you want to … | What the agent does |
+|---|---|---|
+| [`vedun-install`](skills/vedun-install/SKILL.md) | install, update or reinstall vedun, connect an agent to it | checks Docker or Podman, asks for the folder, language and keys in one round, installs, verifies the dashboard, connects Claude Code or prints the settings for another MCP client |
+| [`vedun-add-documents`](skills/vedun-add-documents/SKILL.md) | add PDFs or a new edition, find out why a file was rejected, use your own document numbering | checks the file names against the profile, sets up `doc_id_pattern` and labels if needed, runs the sync and reads the edition report |
+| [`vedun-doctor`](skills/vedun-doctor/SKILL.md) | fix a dashboard that does not open, missing MCP tools, empty search, a failed sync | runs `vedun doctor`, reads the logs, proposes one fix at a time and checks it |
+
+**Without installing anything**, an agent can follow a skill straight from the repository: *"Install vedun from
+github.com/numikel/vedun, follow AGENTS.md"* (AGENTS.md maps each task to its skill).
+
+**To make the skills available in every project**, copy the three folders into your agent's skills folder. For Claude
+Code that is `~/.claude/skills/` (all projects) or `.claude/skills/` inside one project:
+
+```bash
+# macOS / Linux
+git clone --depth 1 https://github.com/numikel/vedun /tmp/vedun-skills
+mkdir -p ~/.claude/skills && cp -r /tmp/vedun-skills/skills/* ~/.claude/skills/
+```
+
+```powershell
+# Windows (PowerShell)
+git clone --depth 1 https://github.com/numikel/vedun $env:TEMP\vedun-skills
+New-Item -ItemType Directory -Force $HOME\.claude\skills | Out-Null
+Copy-Item -Recurse -Force $env:TEMP\vedun-skills\skills\* $HOME\.claude\skills\
+```
+
+Restart Claude Code; the skills then start on their own when your request matches (for example *"add these PDFs to
+vedun"*), or by name (`/vedun-doctor`). Other agents that read `SKILL.md` folders use the same three folders in their
+own skills directory. To update the skills, repeat the copy.
 
 ## Keys and secrets
 
