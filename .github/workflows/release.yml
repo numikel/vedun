@@ -1,6 +1,7 @@
 name: Release image
 
-# A tag like v0.1.0 publishes ghcr.io/<owner>/vedun:0.1.0, :0.1 and :latest for linux/amd64 and linux/arm64
+# A tag like v0.1.0 publishes ghcr.io/<owner>/vedun:0.1.0, :0.1 and :latest for linux/amd64 and linux/arm64; a
+# pre-release such as v0.2.0-rc1 publishes only :0.2.0-rc1, so :latest and :0.2 never point at an unfinished build
 # (Apple Silicon runs the arm64 image natively). Each platform is built on a native runner, then the digests are
 # merged into one multi-platform tag.
 # A manual run (Actions → Release image → Run workflow) is a dry run: it builds both platforms and computes the tags
@@ -99,7 +100,7 @@ jobs:
           tags: |
             type=semver,pattern={{version}},value=${{ inputs.version }}
             type=semver,pattern={{major}}.{{minor}},value=${{ inputs.version }}
-            type=raw,value=latest,enable=${{ startsWith(github.ref, 'refs/tags/v') }}
+        # no latest rule: flavor latest=auto adds :latest for every stable semver tag and skips pre-releases
       - name: create the multi-platform tags
         if: github.event_name == 'push'
         working-directory: /tmp/digests
