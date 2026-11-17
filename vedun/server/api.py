@@ -533,7 +533,7 @@ async def job_sync(
     names = [Path(f.filename or "").name for f in files]
     badn = [n for n in names if not re.fullmatch(S.PDF_NAME_RE, n)]
     if badn:
-        raise HTTPException(400, f"file name must look like 3-26_202610.pdf (got {badn})")
+        raise HTTPException(400, f"file name must look like 4-12_202610.pdf (got {badn})")
     if len(set(names)) != len(names):
         raise HTTPException(400, "duplicate file names in one request")
     staged: list[Path] = []
