@@ -726,6 +726,11 @@ del { background: var(--del-bg); color: var(--del-text); text-decoration: line-t
 .tool-more > summary { cursor: pointer; }
 .tool-more > summary:hover { color: var(--text); }
 .tool-more > p { margin: 6px 0 0 16px; line-height: 1.5; }
+.master-key { display: inline-flex; align-items: center; flex-wrap: wrap; gap: 6px 10px; margin-left: 6px; }
+.key-value { padding: 2px 8px; border-radius: 6px; background: var(--surface-2, rgba(127, 127, 127, 0.12)); word-break: break-all; user-select: all; }
+.key-form { margin-top: 14px; display: grid; gap: 10px; }
+.scope-set { border: 0; margin: 0; padding: 0; display: grid; gap: 6px; }
+.scope-set legend { font-weight: 560; margin-bottom: 4px; }
 @media (max-width: 640px) {
   .kv { grid-template-columns: minmax(0, 1fr); gap: 2px; }
   .kv dd { margin-bottom: 8px; }

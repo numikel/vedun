@@ -1,0 +1,11 @@
+{% import "_macros.html" as m %}
+<span id="master-key" class="master-key">
+{% if shown %}
+  <code class="mono key-value">{{ value }}</code>
+  {{ m.copy_btn(value, _('Copy'), _('Copy the API key')) }}
+  <span class="hint">{{ _("Hidden again in 60 seconds.") }}</span>
+  <span hx-get="/connect/key/hidden" hx-trigger="load delay:60s" hx-target="#master-key" hx-swap="outerHTML"></span>
+{% elif master_set %}
+  <button type="button" class="btn btn-sm" hx-post="/connect/key" hx-target="#master-key" hx-swap="outerHTML">{{ m.icon('eye') }}<span>{{ _("Show the key") }}</span></button>
+{% endif %}
+</span>

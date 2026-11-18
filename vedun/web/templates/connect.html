@@ -2,7 +2,11 @@
 {% import "_macros.html" as m %}
 {% block title %}{{ _("MCP connection") }}{% endblock %}
 {% block content %}
-{{ m.page_header(_("MCP connection"), _("How to connect an AI assistant (Claude Code, Cursor, VS Code, Claude Desktop) to this database through the Model Context Protocol. The page never shows the API key: the configurations refer to an environment variable or prompt for the key.")) }}
+{{ m.page_header(_("MCP connection"), _("How to connect an AI assistant (Claude Code, Cursor, VS Code, Claude Desktop) to this database through the Model Context Protocol. Give each client its own key below; the configurations refer to it through an environment variable or prompt for it.")) }}
+
+{% if not mcp_open %}
+<div class="callout callout-danger" role="alert">{{ m.icon('alert-triangle') }}<div><strong>{{ _("MCP is off: there is no key.") }}</strong> {{ _("Create a key for your AI client in Keys for clients below.") }}</div></div>
+{% endif %}
 
 <section class="card" aria-labelledby="h-endpoint">
   <div class="card-head">
@@ -25,12 +29,21 @@
       {% set header_el %}<span class="mono">{{ key_header }}: &lt;{{ _("key") }}&gt;</span>{% endset %}
       {% set bearer_el %}<span class="mono">Authorization: Bearer &lt;{{ _("key") }}&gt;</span>{% endset %}
       {% set env_el %}<span class="mono">{{ key_env }}</span>{% endset %}
-      {{ _("Header {header} or {bearer}; the key is the value of the server variable {env}.", header=header_el, bearer=bearer_el, env=env_el) }}
-      {% if auth_ok %}{{ m.badge(_('Key is set on the server'), 'shield-check', 'ok') }}{% elif auth_ok is not none %}{{ m.badge(_('Key is not set: MCP answers 503'), 'alert-triangle', 'warn') }}{% endif %}
+      {{ _("Header {header} or {bearer}: a key from Keys for clients, or the master key from the server variable {env}.", header=header_el, bearer=bearer_el, env=env_el) }}
+    </dd>
+    <dt>{{ _("Master key") }}</dt>
+    <dd>
+      {% if master_set %}{{ m.badge(_('set on the server, all permissions'), 'shield-check', 'ok') }} {% include "partials/master_key.html" %}{% else %}{{ m.badge(_('not set'), 'alert-triangle', 'warn') }}{% endif %}
     </dd>
     <dt>{{ _("Scope") }}</dt><dd>{{ _("Read-only. Sync and administrative jobs are available only in this dashboard.") }}</dd>
   </dl>
   {% if not mounted %}<p class="hint">{{ _("The MCP module is not mounted in this instance. Details are in the server log (the “MCP not mounted” entry).") }}</p>{% endif %}
+</section>
+
+<section class="card" aria-labelledby="h-keys">
+  <div class="card-head"><h2 id="h-keys">{{ _("Keys for clients") }}</h2></div>
+  <p class="hint">{{ _("One key per client, with only the permissions it needs. A key is shown once, when it is created; revoke it here when a client no longer needs it.") }}</p>
+  {% include "partials/api_keys.html" %}
 </section>
 
 <section class="card" aria-labelledby="h-clients">

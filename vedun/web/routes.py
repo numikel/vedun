@@ -749,9 +749,96 @@ async def citations_run(request: Request) -> HTMLResponse:
 
 
 # ====================================================================== MCP connection
+SCOPE_LABELS = {
+    "mcp:read": N_("MCP: AI agents"),
+    "api:read": N_("REST API: read"),
+    "api:write": N_("REST API: write"),
+}
+SCOPE_HINTS = {
+    "mcp:read": N_("search and read through the MCP tools (read only)"),
+    "api:read": N_("search, documents and reports through the REST API"),
+    "api:write": N_("also start a sync, refresh the catalog, cancel jobs"),
+}
+
+
+def _keys_ctx(**extra: Any) -> dict[str, Any]:
+    """What the key list on /connect needs; the keys module comes with the server package."""
+    from vedun.server import keys
+    from vedun.server import settings as S
+
+    listed = keys.list_keys()
+    return {
+        "api_keys": listed,
+        "scope_order": keys.SCOPES,
+        "scope_labels": SCOPE_LABELS,
+        "scope_hints": SCOPE_HINTS,
+        "master_set": bool(S.secret("API_KEY")),
+        "mcp_open": bool(S.secret("API_KEY")) or any(k.active and "mcp:read" in k.scopes for k in listed),
+        **extra,
+    }
+
+
+def _no_store(resp: HTMLResponse) -> HTMLResponse:
+    """A response that carries a key value must not be cached by the browser or a proxy."""
+    resp.headers["Cache-Control"] = "no-store"
+    return resp
+
+
 @router.get("/connect", response_class=HTMLResponse)
 def connect_page(request: Request) -> HTMLResponse:
-    return render(request, "connect.html", active="connect", **mcp_setup.context(request))
+    return render(request, "connect.html", active="connect", **mcp_setup.context(request), **_keys_ctx())
+
+
+@router.post("/connect/key", response_class=HTMLResponse)
+def connect_show_master_key(request: Request) -> HTMLResponse:
+    """The master key, on request only (never in the page's HTML), hidden again by the page after 60 s."""
+    require_htmx(request)
+    from vedun.server import audit
+    from vedun.server import settings as S
+
+    value = S.secret("API_KEY")
+    if not value:
+        raise HTTPException(404, t("The master key is not set on the server."))
+    audit.log_event("key_shown", outcome="master key shown on the dashboard")
+    return _no_store(render(request, "partials/master_key.html", shown=True, value=value, master_set=True))
+
+
+@router.get("/connect/key/hidden", response_class=HTMLResponse)
+def connect_hide_master_key(request: Request) -> HTMLResponse:
+    require_htmx(request)
+    from vedun.server import settings as S
+
+    return render(request, "partials/master_key.html", shown=False, master_set=bool(S.secret("API_KEY")))
+
+
+@router.post("/connect/keys", response_class=HTMLResponse)
+async def connect_create_key(request: Request) -> HTMLResponse:
+    require_htmx(request)
+    from vedun.server import audit, keys
+
+    raw = (await request.body()).decode("utf-8", errors="replace")
+    form = parse_qs(raw, keep_blank_values=True)
+    name = (form.get("name") or [""])[-1]
+    expiry = (form.get("expiry") or ["90"])[-1]
+    days = None if expiry == "never" else int(expiry) if expiry.isdigit() else -1
+    try:
+        rec, token = keys.create(name, form.get("scopes") or [], days)
+    except ValueError:
+        err = t("Give the key a name and at least one permission.")
+        return render(request, "partials/api_keys.html", **_keys_ctx(key_error=err))
+    audit.log_event("key_created", outcome=f"key {rec.name}", detail=" ".join(sorted(rec.scopes)))
+    resp = render(request, "partials/api_keys.html", **_keys_ctx(new_token=token, new_name=rec.name))
+    return _no_store(resp)
+
+
+@router.post("/connect/keys/{key_id}/revoke", response_class=HTMLResponse)
+def connect_revoke_key(request: Request, key_id: int) -> HTMLResponse:
+    require_htmx(request)
+    from vedun.server import audit, keys
+
+    if keys.revoke(key_id):
+        audit.log_event("key_revoked", outcome=f"key id {key_id}")
+    return render(request, "partials/api_keys.html", **_keys_ctx())
 
 
 # ====================================================================== media

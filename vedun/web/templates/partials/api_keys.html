@@ -1,0 +1,57 @@
+{% import "_macros.html" as m %}
+<div id="api-keys">
+  {% if new_token %}
+  <div class="callout callout-ok" role="status">{{ m.icon('check-circle') }}<div>
+    <strong>{{ _("Key created: {name}", name=new_name) }}</strong>
+    <p>{{ _("Copy it now and paste it into your client. It is shown only once: vedun keeps only a fingerprint of it.") }}</p>
+    <p><code class="mono key-value">{{ new_token }}</code> {{ m.copy_btn(new_token, _('Copy'), _('Copy the new key')) }}</p>
+  </div></div>
+  {% endif %}
+  {% if key_error %}<div class="callout callout-danger" role="alert">{{ m.icon('alert-circle') }}<div>{{ key_error }}</div></div>{% endif %}
+
+  {% if api_keys %}
+  <div class="table-scroll">
+  <table class="table table-compact">
+    <thead><tr><th>{{ _("Name") }}</th><th>{{ _("Permissions") }}</th><th>{{ _("Expires") }}</th><th>{{ _("Last used") }}</th><th>{{ _("Status") }}</th><th></th></tr></thead>
+    <tbody>
+    {% for k in api_keys %}
+      <tr>
+        <td><strong>{{ k.name }}</strong><br><span class="mono muted small">{{ k.prefix }}…</span></td>
+        <td>{% for s in scope_order if s in k.scopes %}<span class="chip chip-sm">{{ _(scope_labels[s]) }}</span> {% endfor %}</td>
+        <td>{{ k.expires_at|dt if k.expires_at else _("never") }}</td>
+        <td>{{ k.last_used_at|dt if k.last_used_at else _("not yet") }}</td>
+        <td>{% if k.status == 'active' %}{{ m.badge(_('active'), 'check-circle', 'ok') }}{% elif k.status == 'expired' %}{{ m.badge(_('expired'), 'clock', 'warn') }}{% else %}{{ m.badge(_('revoked'), 'ban', 'muted') }}{% endif %}</td>
+        <td>{% if k.status == 'active' %}<button type="button" class="btn btn-sm" hx-post="/connect/keys/{{ k.id }}/revoke" hx-target="#api-keys" hx-swap="outerHTML" hx-confirm="{{ _('Revoke the key {name}? Clients using it stop working at once.', name=k.name) }}">{{ m.icon('ban') }}<span>{{ _("Revoke") }}</span></button>{% endif %}</td>
+      </tr>
+    {% endfor %}
+    </tbody>
+  </table>
+  </div>
+  {% else %}
+  <p class="muted">{{ _("No keys yet.") }}</p>
+  {% endif %}
+
+  <form class="key-form" hx-post="/connect/keys" hx-target="#api-keys" hx-swap="outerHTML">
+    <div class="form-row">
+      <div class="field grow">
+        <label for="key-name">{{ _("Name (who uses it)") }}</label>
+        <input id="key-name" class="input" name="name" maxlength="40" required placeholder="{{ _('e.g. Cursor on my laptop') }}" autocomplete="off">
+      </div>
+      <div class="field">
+        <label for="key-expiry">{{ _("Expires after") }}</label>
+        <select id="key-expiry" class="input" name="expiry">
+          <option value="30">{{ _("30 days") }}</option>
+          <option value="90" selected>{{ _("90 days") }}</option>
+          <option value="never">{{ _("never") }}</option>
+        </select>
+      </div>
+    </div>
+    <fieldset class="scope-set">
+      <legend>{{ _("Permissions") }}</legend>
+      {% for s in scope_order %}
+      <label class="check"><input type="checkbox" name="scopes" value="{{ s }}" {{ 'checked' if s == 'mcp:read' }}><span>{{ _(scope_labels[s]) }}</span> <span class="hint">{{ _(scope_hints[s]) }}</span></label>
+      {% endfor %}
+    </fieldset>
+    <div class="form-actions"><button type="submit" class="btn btn-primary">{{ m.icon('plus') }}<span>{{ _("Create key") }}</span></button></div>
+  </form>
+</div>
