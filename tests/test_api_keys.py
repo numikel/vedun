@@ -118,3 +118,54 @@ def test_every_api_route_has_a_scope():
     assert keys.required_scope("api", "POST", "/api/verify") == "api:read"
     assert keys.required_scope("api", "POST", "/api/jobs/sync") == "api:write"
     assert keys.required_scope("api", "POST", "/api/some-future-route") == "api:write"  # unknown = strict
+
+
+# ------------------------------------------------------------------ dashboard page /connect
+HX = {"HX-Request": "true"}
+FORM = {"Content-Type": "application/x-www-form-urlencoded"}
+
+
+def test_connect_page_offers_keys_but_never_prints_a_value(raw_client):
+    from tests.helpers_server import API_KEY
+
+    html = raw_client.get("/connect?lang=en", headers=BASIC).text
+    assert "Keys for clients" in html and "Show the key" in html and "MCP is off" not in html
+    assert API_KEY not in html  # the master key comes only from POST /connect/key
+
+
+def test_master_key_is_shown_on_request_only(raw_client):
+    from tests.helpers_server import API_KEY
+
+    assert raw_client.post("/connect/key", headers=BASIC).status_code == 400  # HTMX header required (CSRF)
+    r = raw_client.post("/connect/key", headers={**BASIC, **HX})
+    assert r.status_code == 200 and API_KEY in r.text and r.headers["cache-control"] == "no-store"
+    assert "/connect/key/hidden" in r.text  # hidden again after 60 s
+    assert raw_client.post("/connect/key", headers={**bearer("vk_anything"), **HX}).status_code == 401  # Basic only
+
+
+def test_create_show_once_and_revoke_on_the_dashboard(raw_client):
+    h = {**BASIC, **HX, **FORM}
+    r = raw_client.post("/connect/keys?lang=en", headers=h, content="name=Cursor&scopes=mcp%3Aread&expiry=30")
+    assert r.status_code == 200 and r.headers["cache-control"] == "no-store"
+    token = re.search(r"vk_[A-Za-z0-9_-]{40,}", r.text).group(0)
+    assert raw_client.get("/mcp", headers=bearer(token)).status_code == 405  # works at once
+    again = raw_client.get("/connect?lang=en", headers=BASIC).text
+    assert "Cursor" in again and token not in again and token[:10] in again  # shown once, prefix stays
+    key_id = keys.list_keys()[0].id
+    r = raw_client.post(f"/connect/keys/{key_id}/revoke?lang=en", headers={**BASIC, **HX})
+    assert r.status_code == 200 and "revoked" in r.text
+    assert raw_client.get("/mcp", headers=bearer(token)).status_code == 401  # the master key still opens /mcp
+
+
+def test_create_without_a_permission_explains_why(raw_client):
+    h = {**BASIC, **HX, **FORM}
+    r = raw_client.post("/connect/keys?lang=en", headers=h, content="name=x&expiry=90")
+    assert r.status_code == 200 and "at least one permission" in r.text and "vk_" not in r.text
+
+
+def test_banner_when_mcp_has_no_key(raw_client, monkeypatch):
+    monkeypatch.delenv("VEDUN_API_KEY")
+    html = raw_client.get("/connect?lang=en", headers=BASIC).text
+    assert "MCP is off: there is no key." in html and "Show the key" not in html
+    keys.create("agent", {"mcp:read"}, 90)
+    assert "MCP is off" not in raw_client.get("/connect?lang=en", headers=BASIC).text

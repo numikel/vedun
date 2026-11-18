@@ -125,7 +125,7 @@ def context(request: Request) -> dict[str, Any]:
         from vedun.server import mcp_app, mcp_tools
         from vedun.server import settings as S
     except ModuleNotFoundError:
-        ctx.update(server_name="vedun", protocol="", version="", key_env="VEDUN_API_KEY", auth_ok=None)
+        ctx.update(server_name="vedun", protocol="", version="", key_env="VEDUN_API_KEY")
     else:
         key_env = C.ENV_PREFIX + S.SECRET_VARS[0]
         ctx.update(
@@ -133,7 +133,6 @@ def context(request: Request) -> dict[str, Any]:
             protocol=mcp_app.PROTOCOL_REVISION,
             version=S.VERSION,
             key_env=key_env,
-            auth_ok=key_env not in S.missing_secrets(),
             tools=[
                 {
                     "name": mcp_tools.localize(n),

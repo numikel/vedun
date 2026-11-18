@@ -557,13 +557,6 @@ PL: dict[str, str] = {
     "No rows for this filter": "Brak wierszy dla tego filtra",
     "Change the status or the filter phrase.": "Zmień status albo frazę filtra.",
     # ---- MCP page and client snippets
-    "How to connect an AI assistant (Claude Code, Cursor, VS Code, Claude Desktop) to this database through the "
-    "Model Context Protocol. The page never shows the API key: the configurations refer to an environment "
-    "variable or prompt for the key.": (
-        "Jak podłączyć asystenta AI (Claude Code, Cursor, VS Code, Claude Desktop) do tej bazy przez Model Context "
-        "Protocol. Strona nie pokazuje klucza API: konfiguracje odwołują się do zmiennej środowiskowej albo pytają "
-        "o klucz."
-    ),
     "MCP server is running": "Serwer MCP działa",
     "MCP server unavailable": "Serwer MCP niedostępny",
     "Address": "Adres",
@@ -579,11 +572,6 @@ PL: dict[str, str] = {
     "Service version": "Wersja usługi",
     "Authentication": "Uwierzytelnianie",
     "key": "klucz",
-    "Header {header} or {bearer}; the key is the value of the server variable {env}.": (
-        "Nagłówek {header} albo {bearer}; klucz to wartość zmiennej {env} serwera."
-    ),
-    "Key is set on the server": "Klucz ustawiony na serwerze",
-    "Key is not set: MCP answers 503": "Klucz nieustawiony: MCP odpowiada 503",
     "Scope": "Zakres",
     "Read-only. Sync and administrative jobs are available only in this dashboard.": (
         "Tylko odczyt. Synchronizacja i zadania administracyjne są dostępne wyłącznie w tym panelu."
@@ -639,6 +627,47 @@ PL: dict[str, str] = {
     "Server error ({code}). Try again.": "Błąd serwera ({code}). Spróbuj ponownie.",
     "Server error. Try again.": "Błąd serwera. Spróbuj ponownie.",
     "No connection to the server.": "Brak połączenia z serwerem.",
+    "30 days": "30 dni",
+    "90 days": "90 dni",
+    "Copy it now and paste it into your client. It is shown only once: vedun keeps only a fingerprint of it.": "Skopiuj go teraz i wklej do klienta. Jest pokazywany tylko raz: vedun przechowuje wyłącznie jego odcisk.",
+    "Copy the API key": "Kopiuj klucz API",
+    "Copy the new key": "Kopiuj nowy klucz",
+    "Create a key for your AI client in Keys for clients below.": "Utwórz klucz dla swojego klienta AI w sekcji Klucze dla klientów poniżej.",
+    "Create key": "Utwórz klucz",
+    "Expires": "Wygasa",
+    "Expires after": "Wygasa po",
+    "Give the key a name and at least one permission.": "Nadaj kluczowi nazwę i zaznacz co najmniej jedno uprawnienie.",
+    "Header {header} or {bearer}: a key from Keys for clients, or the master key from the server variable {env}.": "Nagłówek {header} albo {bearer}: klucz z sekcji Klucze dla klientów albo klucz główny ze zmiennej serwera {env}.",
+    "Hidden again in 60 seconds.": "Zniknie po 60 sekundach.",
+    "How to connect an AI assistant (Claude Code, Cursor, VS Code, Claude Desktop) to this database through the Model Context Protocol. Give each client its own key below; the configurations refer to it through an environment variable or prompt for it.": "Jak podłączyć asystenta AI (Claude Code, Cursor, VS Code, Claude Desktop) do tej bazy przez Model Context Protocol. Każdemu klientowi daj własny klucz poniżej, a konfiguracje odwołują się do niego przez zmienną środowiskową albo o niego pytają.",
+    "Key created: {name}": "Utworzono klucz: {name}",
+    "Keys for clients": "Klucze dla klientów",
+    "Last used": "Ostatnio użyty",
+    "MCP is off: there is no key.": "MCP jest wyłączone: nie ma żadnego klucza.",
+    "MCP: AI agents": "MCP: agenci AI",
+    "Master key": "Klucz główny",
+    "Name": "Nazwa",
+    "Name (who uses it)": "Nazwa (kto go używa)",
+    "No keys yet.": "Nie ma jeszcze kluczy.",
+    "One key per client, with only the permissions it needs. A key is shown once, when it is created; revoke it here when a client no longer needs it.": "Jeden klucz na klienta, tylko z potrzebnymi uprawnieniami. Klucz jest pokazywany raz, przy tworzeniu. Unieważnij go tutaj, gdy klient przestanie go potrzebować.",
+    "Permissions": "Uprawnienia",
+    "REST API: read": "REST API: odczyt",
+    "REST API: write": "REST API: zapis",
+    "Revoke": "Unieważnij",
+    "Revoke the key {name}? Clients using it stop working at once.": "Unieważnić klucz {name}? Klienci, którzy go używają, od razu przestaną działać.",
+    "Show the key": "Pokaż klucz",
+    "The master key is not set on the server.": "Klucz główny nie jest ustawiony na serwerze.",
+    "active": "aktywny",
+    "also start a sync, refresh the catalog, cancel jobs": "także uruchamianie synchronizacji, odświeżanie katalogu, anulowanie zadań",
+    "e.g. Cursor on my laptop": "np. Cursor na moim laptopie",
+    "expired": "wygasły",
+    "never": "nigdy",
+    "not set": "nie ustawiono",
+    "not yet": "jeszcze nie",
+    "revoked": "unieważniony",
+    "search and read through the MCP tools (read only)": "wyszukiwanie i odczyt przez narzędzia MCP (tylko odczyt)",
+    "search, documents and reports through the REST API": "wyszukiwanie, dokumenty i raporty przez REST API",
+    "set on the server, all permissions": "ustawiony na serwerze, wszystkie uprawnienia",
 }
 
 #: English singular (or the explicit ``key=``) -> Polish forms for 1, 2-4 and 5+ items
