@@ -112,13 +112,20 @@ def test_catalog_wording_without_a_source_is_neutral(db_env, monkeypatch):  # no
     monkeypatch.setattr(C, "SOURCE_PLUGIN", None)
     monkeypatch.setattr(C, "UI_LANGUAGE", "en")
     client = TestClient(make_app())
-    assert "Catalog of the source" in plain(client.get("/sync").text)
+    html = client.get("/sync").text
+    assert "Catalog of the source" in plain(html)
+    # nothing to fetch from: no fetch option, no refresh button, a pointer to the plugin guide instead
+    assert 'name="fetch_from_source"' not in html and "/sync/catalog-refresh" not in html
+    assert "#writing-a-source-plugin" in html and "No document source is configured" in plain(html)
     assert "Status against the source" in plain(client.get("/documents").text)
     monkeypatch.setattr(C, "UI_LANGUAGE", "pl")
     assert "Katalog źródła" in plain(client.get("/sync").text)
 
 
-def test_sync_form_posts_fetch_from_source(db_env, monkeypatch):  # noqa: F811
+def test_sync_form_posts_fetch_from_source(db_env, monkeypatch, tmp_path):  # noqa: F811
+    plugin = tmp_path / "named_source.py"
+    plugin.write_text(SOURCE_PLUGIN, encoding="utf-8")
+    monkeypatch.setattr(C, "SOURCE_PLUGIN", plugin)
     monkeypatch.setattr(C, "UI_LANGUAGE", "en")
     html = TestClient(make_app()).get("/sync").text
     assert 'name="fetch_from_source"' in html and 'data-field-fetch="fetch_from_source"' in html

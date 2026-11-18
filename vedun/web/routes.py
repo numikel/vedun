@@ -122,6 +122,9 @@ def _highlighted(ev: Any) -> Any:
     return render_text(ev.text, marked_terms(ev.snippet))
 
 
+PLUGIN_GUIDE_URL = "https://github.com/numikel/vedun/blob/main/docs/reference.md#writing-a-source-plugin"
+
+
 def source_label() -> str:
     """Name of the configured document source for page wording; a neutral phrase when there is none."""
     return K.source_name() or t("the source")
@@ -142,6 +145,8 @@ def _install_env() -> None:
         url_with=W.url_with,
         _=t,
         source_name=source_label,
+        has_source=lambda: K.source_name() is not None,
+        PLUGIN_GUIDE_URL=PLUGIN_GUIDE_URL,
         corpus_name=lambda: C.CORPUS_NAME,
         doc_label=C.doc_label,
         examples=W.search_examples,
