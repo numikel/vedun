@@ -8,4 +8,4 @@ Library entry points (one per future MCP tool), import them from their modules::
     from vedun.check_citations import check_citations
 """
 
-__version__ = "0.1.1"
+__version__ = "0.1.2"
