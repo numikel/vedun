@@ -181,6 +181,9 @@ def test_connect_page_shows_endpoint_tools_and_snippets_without_the_key(client):
         assert client_name in html
     assert API_KEY not in html  # snippets reference ${VEDUN_API_KEY}, never the value
     assert "${VEDUN_API_KEY}" in html
+    assert 'href="https://kprun.michalsk.pl"' in html  # the kprun variant says where kprun comes from
+    english = client.get("/connect?lang=en", headers=BASIC).text
+    assert "(global) or .cursor/mcp.json (project)" in english and "globalnie" not in english
 
 
 def test_read_connections_are_memory_mapped(server_kb, monkeypatch):

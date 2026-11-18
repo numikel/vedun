@@ -403,7 +403,7 @@ elif [ "$mode" = print ]; then
   hum "  Any MCP client (put your API key in VEDUN_API_KEY, or paste it in place of \${VEDUN_API_KEY}):"
   hum "    {\"mcpServers\":{\"vedun\":{\"type\":\"http\",\"url\":\"$URL/mcp\",\"headers\":{\"Authorization\":\"Bearer \${VEDUN_API_KEY}\"}}}}"
   hum "  Ready snippets for other clients: $URL/connect   ${S_DOT}   the API key: vedun keys show-api-key"
-  hum "  kprun users: kprun mcp -e vedun --bearer VEDUN_API_KEY $URL/mcp"
+  hum "  kprun users (https://kprun.michalsk.pl): kprun mcp -e vedun --bearer VEDUN_API_KEY $URL/mcp"
   sreport ok "connection settings printed" "connect=print" "mcp_url=$URL/mcp"
 else
   sreport skip "no agent connected (--connect none); settings: $URL/connect" "connect=none"
@@ -432,7 +432,7 @@ else
   hum "  The keys are stored in the $(store_name "$R_STORE"). Show the login: vedun keys show-password; change keys: vedun keys"
 fi
 hum "  Put your PDFs in $R_DIR/pdf and press Sync in the dashboard (the first sync takes the whole folder)."
-hum "  Commands: vedun help   ${S_DOT}   Already use kprun? 'kprun run vedun -- vedun start' works too."
+hum "  Commands: vedun help   ${S_DOT}   Already use kprun (https://kprun.michalsk.pl)? 'kprun run vedun -- vedun start' works too."
 API_KEY='' DASH_PASS=''
 if [ "$JSON" = 1 ]; then jobj step=done status=ok "url=$URL" "dir=$R_DIR"; fi
 exit 0

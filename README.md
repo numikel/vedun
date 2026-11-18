@@ -7,6 +7,9 @@ vedun is built for people who quote documents for a living (engineers, auditors,
 and for the AI agents that help them. It never invents a clause number: every answer points to a real unit of a real
 edition, and a quote can be checked against the PDF before it goes into a mail or a report.
 
+> **Why "vedun"?** The name comes from the Old Slavic *vedun* (Polish *wiedun*): the village wise man, the one who
+> *knows*, from *vedati*, "to know". vedun knows where every clause is and never claims what it cannot show.
+
 - **Exact answers.** Look up a clause, table or figure by its number; search by meaning in any language; search for an
   exact phrase or number. Every hit carries the document, edition, clause id, verbatim text and a citation.
 - **Quote check.** `verify_quote` confirms that a sentence really appears in that clause and in the PDF text layer.
@@ -163,8 +166,8 @@ Keys live in the operating system's secret store: Windows (DPAPI, encrypted for 
 `%LOCALAPPDATA%\vedun\secrets`), macOS (Keychain), Linux (Secret Service via `secret-tool`; on a headless server the
 installer explains the alternatives). `vedun start` reads them and passes them to the container for that run only;
 they are never written to a file in the install folder.
-If you already use a secrets injector such as [kprun](https://github.com/numikel/kprun), `kprun run vedun -- vedun start`
-works as well.
+If you already use a secrets injector such as [kprun](https://kprun.michalsk.pl) (keeps API keys out of config files
+and shell profiles), `kprun run vedun -- vedun start` works as well.
 
 **Costs.** Embeddings are billed by OpenRouter per token, mostly once per document. A daily budget
 (`VEDUN_DAILY_BUDGET_USD`, default 3 USD) caps API spending: when it is used up, search answers from full-text only and

@@ -602,50 +602,16 @@ PL: dict[str, str] = {
         "Moduł serwera MCP nie jest dostępny w tej instancji."
     ),
     "terminal (bash or PowerShell), outside a claude session": "terminal (bash lub PowerShell), poza sesją claude",
-    "terminal, outside a claude session": "terminal, poza sesją claude",
-    "Claude Code substitutes {ref} on every connection, so the key never reaches the configuration file. Set "
-    "the variable {key_env} in the environment you start claude from.": (
-        "Claude Code sam podstawia {ref} przy każdym połączeniu, więc klucz nie trafia do pliku konfiguracji. "
-        "Ustaw zmienną {key_env} w środowisku, z którego uruchamiasz claude."
-    ),
-    "Instead of --scope user: --scope project writes the entry to the project's .mcp.json (no key).": (
-        "Zamiast --scope user: --scope project zapisze wpis w .mcp.json projektu (bez klucza)."
-    ),
-    "On Windows use PowerShell 7.3 or newer, or Git Bash: older PowerShell drops the quotes inside the JSON "
-    "passed to a program.": (
-        "W Windows użyj PowerShell 7.3 lub nowszego albo Git Bash: starszy PowerShell gubi cudzysłowy wewnątrz "
-        "JSON przekazywanego do programu."
-    ),
-    "Check: claude mcp list, or /mcp in a session (a green marker next to the name).": (
-        "Sprawdzenie: claude mcp list albo /mcp w sesji (zielony znacznik przy nazwie)."
-    ),
     "Claude Code through kprun (secrets manager)": "Claude Code przez kprun (menedżer sekretów)",
-    "kprun reads the key from the entry {name} when the bridge starts; it is neither in the environment nor in "
-    "any file.": ("Klucz pobiera kprun z wpisu {name} przy starcie mostu; nie ma go w środowisku ani w plikach."),
-    "Optional variant: requires kprun to be installed and an entry holding the key.": (
-        "Wariant opcjonalny: wymaga zainstalowanego kprun i wpisu z kluczem."
+    "~/.cursor/mcp.json (global) or .cursor/mcp.json (project)": (
+        "~/.cursor/mcp.json (globalnie) albo .cursor/mcp.json (projekt)"
     ),
-    "Cursor reads {ref} from the environment variables; restart Cursor after changing them.": (
-        "Cursor odczytuje {ref} ze zmiennych środowiskowych; po zmianie uruchom Cursor ponownie."
-    ),
+    "terminal, outside a claude session, requires {kprun}": "terminal, poza sesją claude, wymaga {kprun}",
+    "Claude Desktop (mcp-remote bridge)": "Claude Desktop (most mcp-remote)",
     ".vscode/mcp.json or the command “MCP: Open User Configuration”": (
         ".vscode/mcp.json albo polecenie „MCP: Open User Configuration”"
     ),
-    "VS Code asks for the key when the server first starts and keeps it in its secure storage.": (
-        "VS Code zapyta o klucz przy pierwszym starcie serwera i zapamięta go w bezpiecznym magazynie."
-    ),
     "<paste the API key>": "<wklej klucz API>",
-    "Claude Desktop reaches a remote server only through connectors, without a custom header, hence the local "
-    "mcp-remote bridge (needs Node.js 18+).": (
-        "Claude Desktop łączy się ze zdalnym serwerem tylko przez konektory, bez własnego nagłówka, dlatego "
-        "lokalny most mcp-remote (wymaga Node.js 18+)."
-    ),
-    "The key is stored here in the configuration file as plain text: protect that file.": (
-        "Klucz trafia tu do pliku konfiguracji jawnym tekstem: chroń ten plik."
-    ),
-    "A header without a space after the colon avoids the Windows bug with spaces in arguments.": (
-        "Nagłówek bez spacji po dwukropku omija błąd ze spacjami w argumentach na Windows."
-    ),
     # ---- errors raised by routes
     "An HTMX request is required.": "Wymagane żądanie HTMX.",
     "No such document": "Nie ma takiego dokumentu",

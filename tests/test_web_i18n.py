@@ -272,10 +272,13 @@ def test_english_catalog_and_citation_pages(web_env, monkeypatch):
 
 
 def test_mcp_page_and_snippets_follow_the_language(english):
-    en = plain(english.get("/connect").text)
-    assert "Client configuration" in en and "Claude Code substitutes" in en and "outside a claude session" in en
+    raw_en = english.get("/connect").text
+    en = plain(raw_en)
+    assert "Client configuration" in en and "mcp-remote bridge" in en and "outside a claude session" in en
+    assert "snippet-notes" not in raw_en and 'href="https://kprun.michalsk.pl"' in raw_en  # code + copy only
+    assert "<details" in raw_en and "tool-more" in raw_en  # long tool descriptions fold out
     pl = plain(english.get("/connect?lang=pl").text)
-    assert "Konfiguracja klientów" in pl and "Claude Code sam podstawia" in pl and "poza sesją claude" in pl
+    assert "Konfiguracja klientów" in pl and "most mcp-remote" in pl and "poza sesją claude, wymaga kprun" in pl
 
 
 def test_javascript_strings_are_embedded_for_polish_only(english):

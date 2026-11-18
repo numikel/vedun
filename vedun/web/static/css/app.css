@@ -721,10 +721,11 @@ del { background: var(--del-bg); color: var(--del-text); text-decoration: line-t
 .snippet-body { padding-bottom: 14px; }
 .snippet-body .log { max-height: 340px; }
 .snippet-actions { display: flex; justify-content: flex-end; }
-.snippet-notes { margin: 10px 0 0; padding-left: 18px; color: var(--text-2); font-size: 0.88rem; }
-.snippet-notes li + li { margin-top: 4px; }
 .tool-row { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 12px; padding: 10px 6px; }
 .tool-summary { flex-basis: 100%; margin: 0; color: var(--text-2); font-size: 0.88rem; }
+.tool-more > summary { cursor: pointer; }
+.tool-more > summary:hover { color: var(--text); }
+.tool-more > p { margin: 6px 0 0 16px; line-height: 1.5; }
 @media (max-width: 640px) {
   .kv { grid-template-columns: minmax(0, 1fr); gap: 2px; }
   .kv dd { margin-bottom: 8px; }
