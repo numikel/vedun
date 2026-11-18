@@ -72,8 +72,9 @@ scripts, show `Set-ExecutionPolicy -Scope CurrentUser RemoteSigned` and let the 
 
 - Claude Code on macOS/Linux: the installer's `--connect claude` runs `claude mcp add` itself (the key then lives in
   Claude Code's config; say so).
-- Otherwise give the user this command to run in their terminal, with the key from `vedun keys show-api-key`
-  (Windows: `.\vedun.ps1 keys show`):
+- Otherwise suggest a key for this client: the user creates it on the dashboard page **MCP connection** (*Keys for
+  clients*, permission *MCP: AI agents*) and pastes it into the command below themselves; the master key from
+  `vedun keys show-api-key` (Windows: `.\vedun.ps1 keys show`) works too. Never ask for the key in the chat:
   `claude mcp add --scope user vedun --transport http http://127.0.0.1:8765/mcp --header "Authorization: Bearer <API key>"`
 - Other clients: the dashboard page **MCP connection** (`/connect`) has ready-made configurations.
 - After connecting, a new agent session sees the `kb_*` tools.
@@ -81,5 +82,6 @@ scripts, show `Set-ExecutionPolicy -Scope CurrentUser RemoteSigned` and let the 
 ## 6. Finish
 
 Tell the user: the dashboard address, where to put PDFs (`<folder>/pdf`, named `<doc_id>_<YYYYMM>.pdf`; see the
-`vedun-add-documents` skill), and the everyday commands (`vedun start|stop|status|open|keys`, Windows `.\vedun.ps1 …`).
+`vedun-add-documents` skill), and the everyday commands (`vedun start|stop|status|open|keys|update|upgrade`, Windows
+`.\vedun.ps1 …`).
 If anything failed, continue with the `vedun-doctor` skill.

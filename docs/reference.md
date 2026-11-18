@@ -161,16 +161,27 @@ docker compose up -d --build
 
 ### Security
 
-- **Fail closed.** If `VEDUN_API_KEY`, `VEDUN_DASH_USER` or `VEDUN_DASH_PASSWORD` is unset, every protected route answers
-  503 and the log shows one clear error at startup. Only `GET /api/health` is open (no data, no key names).
-- **`/api/*`**: `Authorization: Bearer <VEDUN_API_KEY>` or `X-API-Key`, or HTTP Basic with the dashboard credentials.
-  **Dashboard, `/static`, `/media`**: HTTP Basic. **`/mcp`**: the API key only. Comparisons are constant-time; secrets are
-  never logged, echoed or written to the audit log.
+- **Fail closed.** If `VEDUN_DASH_USER` or `VEDUN_DASH_PASSWORD` is unset, every protected route answers 503 and the log
+  shows one clear error at startup. Without `VEDUN_API_KEY` the dashboard stays open (keys are created there) and
+  `/api` or `/mcp` answer 503 only while no key at all could open them; the log shows a warning. Only
+  `GET /api/health` is open (no data, no key names).
+- **Keys and permissions** (`vedun/server/keys.py`). The master key `VEDUN_API_KEY` and the dashboard login hold every
+  permission. Keys created on the dashboard page *MCP connection* hold what they were given: `mcp:read` (`/mcp`),
+  `api:read` (`GET /api/*`, `POST /api/verify`, `POST /api/check-citations`), `api:write` (the job routes: sync,
+  catalog refresh, check-citations scan, cancel; implies `api:read`). Unclassified routes need `api:write`, and a test
+  fails for a new route that is not classified. A valid key without the permission gets 403 `insufficient_scope`.
+  Dashboard keys are `vk_` + 43 random characters; `state.db` keeps only their SHA-256, a 10-character prefix, the
+  permissions, created / expires / last used (written at most once a minute) and revoked. Keys never manage keys.
+- **`/api/*`**: `Authorization: Bearer <key>` or `X-API-Key: <key>`, or HTTP Basic with the dashboard credentials.
+  **Dashboard, `/static`, `/media`**: HTTP Basic. **`/mcp`**: a key only. The master key is compared in constant time,
+  dashboard keys by their SHA-256; secrets are never logged, echoed or written to the audit log (it names a dashboard
+  key by its name). The master key is shown on the dashboard only on request (`POST /connect/key`, `no-store`).
 - **In-process dashboard calls** carry a random per-process internal token (memory only).
 - **Cross-site guard.** Every `POST` and the paid `GET /api/search` require `X-Requested-With: vedun` (or `HX-Request:
   true`), `Sec-Fetch-Site` absent/`same-origin`/`none`, and an allowed `Origin` if present (`VEDUN_ALLOWED_ORIGINS`).
   A wrong `Host` header gets 400 (`VEDUN_ALLOWED_HOSTS`, DNS rebinding).
-- **Rate limit** 60 requests/min per credential on `/api` and `/mcp` (`VEDUN_RATE_LIMIT_PER_MIN`), then 429.
+- **Rate limit** 60 requests/min per credential on `/api` and `/mcp` (`VEDUN_RATE_LIMIT_PER_MIN`), then 429: every key
+  has its own window.
 - **Daily budget** `VEDUN_DAILY_BUDGET_USD` (default 3.0) for embedding and rerank calls, per UTC day; when used up,
   `search` answers from BM25 only (`budget_exhausted: true`) and a sync that needs embeddings fails at once.
 - **Audit log** `reports/audit.jsonl`: job submissions and results, downloads, authentication failures (throttled),
