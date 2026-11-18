@@ -42,7 +42,6 @@
     <div class="snippet-body">
       <div class="snippet-actions">{{ m.copy_btn(s.text, _('Copy the configuration'), _('Copy the configuration: {title}', title=s.title)) }}</div>
       <pre class="log" tabindex="0" aria-label="{{ _('Configuration: {title}', title=s.title) }}">{{ s.text }}</pre>
-      {% if s.notes %}<ul class="snippet-notes">{% for n in s.notes %}<li>{{ n }}</li>{% endfor %}</ul>{% endif %}
     </div>
   </details>
   {% endfor %}
@@ -56,7 +55,11 @@
     <li class="tool-row">
       <span class="row-main"><span class="mono">{{ t.name }}</span><span class="row-sub">{{ t.title }}</span></span>
       <span class="row-chips">{% if t.paid %}{{ m.badge(_('external API, daily budget'), 'wallet', 'warn') }}{% else %}{{ m.badge(_('local, no cost'), 'database', 'muted') }}{% endif %}</span>
+      {% if t.details %}
+      <details class="tool-summary tool-more"><summary>{{ t.summary }}</summary><p>{{ t.details }}</p></details>
+      {% else %}
       <p class="tool-summary">{{ t.summary }}</p>
+      {% endif %}
     </li>
     {% endfor %}
   </ul>

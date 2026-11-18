@@ -59,7 +59,7 @@ their transcripts. A person reads them in a terminal with `vedun keys show-passw
 
 `vedun start` reads the keys and hands them only to the `compose` child process. Keys already present in the
 environment win, so a secrets injector works too: `kprun run vedun -- vedun start` (kprun:
-[github.com/numikel/kprun](https://github.com/numikel/kprun)).
+[kprun.michalsk.pl](https://kprun.michalsk.pl)).
 
 ## Podman
 

@@ -8,14 +8,17 @@ Formats checked against the client docs on 2026-11-11 (Claude Code, VS Code, Cur
 from __future__ import annotations
 
 import json
-from dataclasses import dataclass, field
+import re
+from dataclasses import dataclass
 from typing import Any
 
 from fastapi import Request
+from markupsafe import Markup
 
 from .i18n import t
 
 KEY_HEADER = "X-API-Key"
+KPRUN_URL = "https://kprun.michalsk.pl"
 
 
 @dataclass(frozen=True)
@@ -26,7 +29,6 @@ class Snippet:
     title: str
     where: str  # file or command the snippet goes into
     text: str
-    notes: tuple[str, ...] = field(default_factory=tuple)
 
 
 def _json(obj: Any) -> str:
@@ -37,53 +39,26 @@ def client_snippets(url: str, name: str, key_env: str) -> list[Snippet]:
     """Configurations for the common MCP clients, all pointing at ``url`` with the key from ``key_env``."""
     ref = "${" + key_env + "}"
     http_entry = {"type": "http", "url": url, "headers": {KEY_HEADER: ref}}
+    kprun = Markup(f'<a href="{KPRUN_URL}" target="_blank" rel="noopener">kprun</a>')
     return [
         Snippet(
             "claude-code",
             "Claude Code",
             t("terminal (bash or PowerShell), outside a claude session"),
             f"claude mcp add-json --scope user {name} '{json.dumps(http_entry)}'",
-            (
-                t(
-                    "Claude Code substitutes {ref} on every connection, so the key never reaches the "
-                    "configuration file. Set the variable {key_env} in the environment you start claude from.",
-                    ref=ref,
-                    key_env=key_env,
-                ),
-                t("Instead of --scope user: --scope project writes the entry to the project's .mcp.json (no key)."),
-                t(
-                    "On Windows use PowerShell 7.3 or newer, or Git Bash: older PowerShell drops the quotes "
-                    "inside the JSON passed to a program."
-                ),
-                t("Check: claude mcp list, or /mcp in a session (a green marker next to the name)."),
-            ),
         ),
         Snippet(
             "kprun",
             t("Claude Code through kprun (secrets manager)"),
-            t("terminal, outside a claude session"),
+            t("terminal, outside a claude session, requires {kprun}", kprun=kprun),
             f'claude mcp add --scope user {name} -- kprun mcp -e {name} --header "{KEY_HEADER}: '
             f'{{{{{key_env}}}}}" {url}',
-            (
-                t(
-                    "kprun reads the key from the entry {name} when the bridge starts; it is neither in the "
-                    "environment nor in any file.",
-                    name=name,
-                ),
-                t("Optional variant: requires kprun to be installed and an entry holding the key."),
-            ),
         ),
         Snippet(
             "cursor",
             "Cursor",
-            "~/.cursor/mcp.json (globalnie) albo .cursor/mcp.json (projekt)",
+            t("~/.cursor/mcp.json (global) or .cursor/mcp.json (project)"),
             _json({"mcpServers": {name: {"url": url, "headers": {KEY_HEADER: "${env:" + key_env + "}"}}}}),
-            (
-                t(
-                    "Cursor reads {ref} from the environment variables; restart Cursor after changing them.",
-                    ref="${env:" + key_env + "}",
-                ),
-            ),
         ),
         Snippet(
             "vscode",
@@ -97,11 +72,10 @@ def client_snippets(url: str, name: str, key_env: str) -> list[Snippet]:
                     ],
                 }
             ),
-            (t("VS Code asks for the key when the server first starts and keeps it in its secure storage."),),
         ),
         Snippet(
             "claude-desktop",
-            "Claude Desktop (most mcp-remote)",
+            t("Claude Desktop (mcp-remote bridge)"),
             "%APPDATA%\\Claude\\claude_desktop_config.json (Windows), "
             "~/Library/Application Support/Claude/claude_desktop_config.json (macOS)",
             _json(
@@ -124,16 +98,18 @@ def client_snippets(url: str, name: str, key_env: str) -> list[Snippet]:
                     }
                 }
             ),
-            (
-                t(
-                    "Claude Desktop reaches a remote server only through connectors, without a custom header, "
-                    "hence the local mcp-remote bridge (needs Node.js 18+)."
-                ),
-                t("The key is stored here in the configuration file as plain text: protect that file."),
-                t("A header without a space after the colon avoids the Windows bug with spaces in arguments."),
-            ),
         ),
     ]
+
+
+_FIRST_SENTENCE = re.compile(r"^(.+?[.!?])(?:\s+|$)(.*)$", re.S)
+
+
+def _tool_text(description: str) -> tuple[str, str]:
+    """(first sentence, the rest) of a tool description: the list shows one line, the rest folds out."""
+    text = " ".join(description.split())
+    m = _FIRST_SENTENCE.match(text)
+    return (m[1], m[2].strip()) if m else (text, "")
 
 
 def _mcp_mounted(request: Request) -> bool:
@@ -161,11 +137,13 @@ def context(request: Request) -> dict[str, Any]:
             tools=[
                 {
                     "name": mcp_tools.localize(n),
-                    "title": t,
-                    "summary": mcp_tools.localize(d.strip().split("\n", 1)[0]),
+                    "title": title,
+                    "summary": summary,
+                    "details": details,
                     "paid": paid,
                 }
-                for n, t, d, _fn, paid in mcp_tools.TOOL_SPECS
+                for n, title, d, _fn, paid in mcp_tools.TOOL_SPECS
+                for summary, details in [_tool_text(mcp_tools.localize(d))]
             ],
         )
     ctx["snippets"] = client_snippets(url, ctx["server_name"], ctx["key_env"])
