@@ -70,8 +70,18 @@ def secret(name: str) -> str:
 
 
 def missing_secrets() -> list[str]:
-    """Variable names (not values) of the unset credentials; any gap closes every protected route (503)."""
+    """Variable names (not values) of the unset credentials."""
     return [C.ENV_PREFIX + n for n in SECRET_VARS if not secret(n)]
+
+
+def missing_dashboard_secrets() -> list[str]:
+    """Unset dashboard login variables: without them every protected route answers 503 (keys are managed there)."""
+    return [C.ENV_PREFIX + n for n in SECRET_VARS[1:] if not secret(n)]
+
+
+def api_key_var() -> str:
+    """Name of the master key variable (``VEDUN_API_KEY``)."""
+    return C.ENV_PREFIX + SECRET_VARS[0]
 
 
 def max_upload_bytes() -> int:

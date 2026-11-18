@@ -140,11 +140,17 @@ def create_app() -> FastAPI:
     # added first = inner: authentication, rate limit; added last = outermost: the Host check (DNS rebinding)
     app.add_middleware(security.SecurityMiddleware, limiter=security.RateLimiter())
     app.add_middleware(TrustedHostMiddleware, allowed_hosts=S.allowed_hosts())
-    if missing := S.missing_secrets():
+    if missing := S.missing_dashboard_secrets():
         log.error(
             "AUTHENTICATION NOT CONFIGURED: %s unset. Every protected route answers 503 until they are set "
-            "(kprun set vedun --stdin; start with: kprun run vedun openrouter typesafe -- ...).",
+            "(vedun keys, or your secrets manager).",
             ", ".join(missing),
+        )
+    elif not S.secret("API_KEY"):
+        log.warning(
+            "%s unset: /api and /mcp accept only keys created on the dashboard page 'MCP connection' "
+            "and answer 503 while there is none.",
+            S.api_key_var(),
         )
 
     @app.exception_handler(StarletteHTTPException)

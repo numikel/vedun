@@ -6,11 +6,15 @@ Layers (outermost first, see :func:`vedun.server.app.create_app`):
 2. :class:`SecurityMiddleware` (pure ASGI):
    * ``/api/health`` is open (Docker healthcheck, leaks nothing);
    * rate limit per credential / client address on ``/api`` and ``/mcp`` (429 + ``Retry-After``);
-   * fail closed: when ``VEDUN_API_KEY``, ``VEDUN_DASH_USER`` or ``VEDUN_DASH_PASSWORD`` is unset every protected
-     route answers 503;
-   * ``/mcp``: ``Authorization: Bearer <VEDUN_API_KEY>`` only;
-   * ``/api``: Bearer, or HTTP Basic (dashboard credentials, so the page's own ``fetch()`` works), or the
-     per-process internal token that the dashboard's in-process client sends;
+   * fail closed: when ``VEDUN_DASH_USER`` or ``VEDUN_DASH_PASSWORD`` is unset every protected route answers 503;
+     ``/api`` or ``/mcp`` also answer 503 while no key at all could open them (no ``VEDUN_API_KEY`` and no active
+     dashboard key with that area's scope), so a fresh install can log in to the dashboard and create one;
+   * ``/mcp``: ``Authorization: Bearer <key>`` (or ``X-API-Key``) with scope ``mcp:read``;
+   * ``/api``: Bearer / ``X-API-Key`` with scope ``api:read`` or ``api:write`` (:func:`keys.required_scope`), or HTTP
+     Basic (dashboard credentials, so the page's own ``fetch()`` works), or the per-process internal token that the
+     dashboard's in-process client sends; a valid key without the scope gets 403;
+   * the master key ``VEDUN_API_KEY`` and the dashboard login hold every scope; dashboard keys hold what they were
+     given (:mod:`vedun.server.keys`);
    * everything else (dashboard pages, ``/static``, ``/media``): HTTP Basic.
    Secrets are compared with :func:`secrets.compare_digest` and never logged.
 3. :func:`require_same_origin`, a FastAPI dependency on every state-changing ``/api`` route and on ``GET /api/search``
@@ -30,7 +34,7 @@ from typing import Any
 
 from fastapi import HTTPException, Request
 
-from . import audit
+from . import audit, keys
 from . import settings as S
 
 #: random per process, in memory only; the in-process dashboard client sends it, nobody else knows it
@@ -112,7 +116,7 @@ class SecurityMiddleware:
                     {"Retry-After": str(wait)},
                 )
                 return
-        missing = S.missing_secrets()
+        missing = S.missing_dashboard_secrets()  # the dashboard is where keys are managed: without it, nothing runs
         if missing:
             await self._reply(
                 send,
@@ -128,7 +132,20 @@ class SecurityMiddleware:
             )
             return
 
-        caller = self._authenticate(area, auth, internal, headers.get("x-api-key", ""))
+        caller, granted = self._authenticate(area, auth, internal, headers.get("x-api-key", ""))
+        if caller is None and area in ("api", "mcp") and not self._area_has_key(area):
+            await self._reply(
+                send,
+                503,
+                {
+                    "error": {
+                        "code": "auth_not_configured",
+                        "message": f"no API key is configured for /{area}: set {S.api_key_var()} or create a key "
+                        "on the dashboard page 'MCP connection'; refusing to serve",
+                    }
+                },
+            )
+            return
         if caller is None:
             self._audit_failure(client, area, bool(auth))
             if area == "dash":
@@ -142,6 +159,16 @@ class SecurityMiddleware:
                 {"WWW-Authenticate": www},
             )
             return
+        if area in ("api", "mcp"):
+            needed = keys.required_scope(area, scope.get("method", "GET"), scope["path"])
+            if needed not in granted:
+                audit.log_event("scope_denied", outcome=f"403 {area}", detail=needed, caller=caller)
+                await self._reply(
+                    send,
+                    403,
+                    {"error": {"code": "insufficient_scope", "message": f"this key lacks the permission {needed}"}},
+                )
+                return
         token = audit.CALLER.set(caller)
         try:
             await self.app(scope, receive, send)
@@ -150,24 +177,33 @@ class SecurityMiddleware:
 
     # ------------------------------------------------------------------ helpers
     @staticmethod
-    def _authenticate(area: str, auth: str, internal: bool, api_key: str = "") -> str | None:
+    def _authenticate(area: str, auth: str, internal: bool, api_key: str = "") -> tuple[str | None, frozenset[str]]:
+        """(caller, scopes) or (None, empty). The master key and the dashboard login hold every scope."""
         if internal:
-            return "internal"
-        if api_key and area in ("api", "mcp") and _eq(api_key.strip(), S.secret("API_KEY")):
-            return "mcp" if area == "mcp" else "api"  # X-API-Key: the same key as Bearer
+            return "internal", keys.ALL_SCOPES
         scheme, _, value = auth.partition(" ")
         scheme = scheme.lower()
-        if scheme == "bearer" and area in ("api", "mcp"):
-            return ("mcp" if area == "mcp" else "api") if _eq(value.strip(), S.secret("API_KEY")) else None
+        token = api_key.strip() or (value.strip() if scheme == "bearer" else "")
+        if token and area in ("api", "mcp"):  # X-API-Key or Bearer: the same keys
+            master = S.secret("API_KEY")
+            if master and _eq(token, master):
+                return ("mcp" if area == "mcp" else "api"), keys.ALL_SCOPES
+            rec = keys.verify(token)
+            return (f"key:{rec.name}", rec.scopes) if rec else (None, frozenset())
         if scheme == "basic" and area in ("api", "dash"):
             try:
                 user, _, pw = base64.b64decode(value.strip(), validate=True).decode("utf-8").partition(":")
             except Exception:  # noqa: BLE001 - malformed header
-                return None
+                return None, frozenset()
             ok_user = _eq(user, S.secret("DASH_USER"))
             ok_pw = _eq(pw, S.secret("DASH_PASSWORD"))  # both always evaluated: no early exit on the user name
-            return "dashboard" if ok_user and ok_pw else None
-        return None
+            return ("dashboard", keys.ALL_SCOPES) if ok_user and ok_pw else (None, frozenset())
+        return None, frozenset()
+
+    @staticmethod
+    def _area_has_key(area: str) -> bool:
+        """Some key could open ``area``: the master key, or an active dashboard key with the area's read scope."""
+        return bool(S.secret("API_KEY")) or keys.any_active("mcp:read" if area == "mcp" else "api:read")
 
     def _audit_failure(self, client: str, area: str, had_credentials: bool) -> None:
         now = time.monotonic()
