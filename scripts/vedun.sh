@@ -8,7 +8,7 @@
 # Secrets already present in the environment win over the secret store, so `kprun run vedun -- vedun start` works.
 set -euo pipefail
 
-VEDUN_VERSION="0.1.2"
+VEDUN_VERSION="0.2.0"
 SERVICE="${VEDUN_SECRET_SERVICE:-vedun}"
 CONFIG_HOME="${XDG_CONFIG_HOME:-$HOME/.config}"
 RECORD="${VEDUN_INSTALL_RECORD:-$CONFIG_HOME/vedun/install.json}"

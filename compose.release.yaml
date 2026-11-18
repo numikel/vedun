@@ -9,7 +9,7 @@ name: vedun
 
 services:
   vedun:
-    image: ${VEDUN_IMAGE:-ghcr.io/numikel/vedun:0.1}
+    image: ${VEDUN_IMAGE:-ghcr.io/numikel/vedun:0.2}
     init: true
     restart: unless-stopped
     # uid:gid the service runs as. The launcher sets it: Docker on Linux = your uid (files stay editable by you),
