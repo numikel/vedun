@@ -1,6 +1,6 @@
 [project]
 name = "vedun"
-version = "0.1.1"
+version = "0.1.2"
 description = "Local knowledge base for a collection of standards and technical documents: exact, cited answers with a web dashboard, REST API and MCP server"
 readme = "README.md"
 license = "Apache-2.0"
