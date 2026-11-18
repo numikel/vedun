@@ -76,8 +76,8 @@ def test_health_is_open(raw_client):
     assert r.status_code == 200 and set(r.json()) == {"status", "version", "time"}
 
 
-@pytest.mark.parametrize("unset", ["VEDUN_API_KEY", "VEDUN_DASH_USER", "VEDUN_DASH_PASSWORD"])
-def test_unset_secret_closes_everything_with_503(raw_client, monkeypatch, unset):
+@pytest.mark.parametrize("unset", ["VEDUN_DASH_USER", "VEDUN_DASH_PASSWORD"])
+def test_unset_dashboard_login_closes_everything_with_503(raw_client, monkeypatch, unset):
     monkeypatch.delenv(unset)
     for path in ("/api/collection", "/", "/mcp"):
         r = raw_client.get(path, headers={**BEARER, **BASIC})
@@ -86,14 +86,32 @@ def test_unset_secret_closes_everything_with_503(raw_client, monkeypatch, unset)
     assert raw_client.get("/api/health").status_code == 200  # the healthcheck stays open
 
 
-def test_startup_logs_one_clear_error_when_unset(server_kb, monkeypatch, caplog):
+def test_unset_master_key_keeps_the_dashboard_open(raw_client, monkeypatch):
+    monkeypatch.delenv("VEDUN_API_KEY")
+    assert raw_client.get("/", headers=BASIC).status_code == 200  # where keys are created
+    for path in ("/api/collection", "/mcp"):
+        r = raw_client.get(path, headers=BEARER)
+        assert r.status_code == 503 and "VEDUN_API_KEY" in r.json()["error"]["message"], path
+
+
+def test_startup_logs_one_clear_error_when_the_login_is_unset(server_kb, monkeypatch, caplog):
     from vedun.server.app import create_app
 
-    monkeypatch.delenv("VEDUN_API_KEY")
+    monkeypatch.delenv("VEDUN_DASH_PASSWORD")
     with caplog.at_level("ERROR", logger="vedun.server"):
         create_app()
     msgs = [r.getMessage() for r in caplog.records if r.name == "vedun.server"]
-    assert len(msgs) == 1 and "VEDUN_API_KEY" in msgs[0] and "503" in msgs[0]
+    assert len(msgs) == 1 and "VEDUN_DASH_PASSWORD" in msgs[0] and "503" in msgs[0]
+
+
+def test_startup_warns_when_only_the_master_key_is_unset(server_kb, monkeypatch, caplog):
+    from vedun.server.app import create_app
+
+    monkeypatch.delenv("VEDUN_API_KEY")
+    with caplog.at_level("WARNING", logger="vedun.server"):
+        create_app()
+    msgs = [(r.levelname, r.getMessage()) for r in caplog.records if r.name == "vedun.server"]
+    assert msgs and all(lvl == "WARNING" for lvl, _ in msgs) and "MCP connection" in msgs[0][1]
 
 
 def test_dashboard_in_process_calls_work_without_external_credentials(raw_client):
