@@ -1,5 +1,6 @@
 #!/usr/bin/env bash
-# vedun launcher for macOS and Linux (bash 3.2+): start, stop, status, logs, update, open, keys, doctor, uninstall.
+# vedun launcher for macOS and Linux (bash 3.2+): start, stop, status, logs, update, upgrade,
+# open, keys, doctor, uninstall.
 # The installer copies this file to ~/.local/bin/vedun and also sources it as a library (VEDUN_LIB=1).
 # Environment overrides: VEDUN_INSTALL_RECORD (path of install.json), VEDUN_BIN_DIR (launcher folder, default
 # ~/.local/bin), VEDUN_SECRET_SERVICE (secret store service name, default vedun), VEDUN_START_TIMEOUT (seconds to
@@ -15,7 +16,8 @@ if [ -n "${VEDUN_INSTALL_RECORD:-}" ]; then BIN_DIR="${VEDUN_BIN_DIR:-$(dirname 
 FILE_SECRETS_DIR="$CONFIG_HOME/$SERVICE/secrets"
 SECRET_NAMES="VEDUN_API_KEY VEDUN_DASH_USER VEDUN_DASH_PASSWORD OPENROUTER_API_KEY TYPESAFE_API_KEY"
 REQUIRED_SECRETS="VEDUN_API_KEY VEDUN_DASH_USER VEDUN_DASH_PASSWORD"
-DEFAULT_IMAGE="ghcr.io/numikel/vedun:0.1"
+DEFAULT_IMAGE="ghcr.io/numikel/vedun:0.2"
+IMAGE_LINE="${DEFAULT_IMAGE##*:}" # the minor line this launcher belongs to: `vedun upgrade` moves to it
 START_TIMEOUT="${VEDUN_START_TIMEOUT:-300}"
 PROFILE_MARK="# added by the vedun installer"
 JSON=0 DRY=0 YES=0
@@ -422,6 +424,47 @@ cmd_update() {
   do_up
   wait_health "$START_TIMEOUT" || die 3 "vedun did not come back after the update." "Run: vedun logs --tail 100"
   report update ok "vedun updated and running: $(service_url)" "url=$(service_url)"
+  upgrade_hint
+}
+cmd_upgrade() {
+  CUR_STEP=upgrade
+  rec_load
+  [ "$R_SOURCE" = image ] || die 2 "This install builds vedun from source ($R_SOURCE)." "Get the new code there, then: vedun update"
+  [ -z "$R_IMAGE" ] || die 2 "The image is set by VEDUN_IMAGE ($R_IMAGE)." "Change that variable instead."
+  local cur new f="$R_DIR/compose.yaml"
+  cur=$(image_ref)
+  new="${cur%:*}:$IMAGE_LINE"
+  if [ "$cur" = "$new" ]; then
+    report upgrade ok "Already on the $IMAGE_LINE line; vedun update gets its fixes." "image=$cur"
+    return 0
+  fi
+  hum "  Upgrade $cur -> $new. What changes in $IMAGE_LINE:"
+  hum "    - keys for AI clients and scripts are created on the dashboard page 'MCP connection' (permissions, expiry)"
+  hum "    - the dashboard opens even without the master API key"
+  hum "  Release notes: https://github.com/numikel/vedun/releases"
+  if [ "$YES" != 1 ]; then confirm "Upgrade now?" N || die 1 "Upgrade cancelled." "Nothing was changed."; fi
+  if [ "$DRY" = 1 ]; then
+    dry "set the image in $f to $new"
+  else
+    sed "s#\${VEDUN_IMAGE:-[^}]*}#\${VEDUN_IMAGE:-$new}#" "$f" >"$f.upgrade" && mv "$f.upgrade" "$f"
+    grep -q "VEDUN_IMAGE:-$new}" "$f" || die 3 "Could not set the image in $f." "Edit its image line by hand to $new."
+  fi
+  compose_env
+  compose pull
+  do_up
+  wait_health "$START_TIMEOUT" || die 3 "vedun did not come back after the upgrade." "Run: vedun logs --tail 100"
+  report upgrade ok "vedun upgraded to $IMAGE_LINE and running: $(service_url)" "image=$new" "url=$(service_url)"
+}
+# upgrade_hint: after an update, say when a newer minor line exists (moving to it is a separate, explained step)
+upgrade_hint() {
+  local cur
+  if [ "$R_SOURCE" != image ] || [ -n "$R_IMAGE" ]; then return 0; fi
+  cur=$(image_ref)
+  cur=${cur##*:}
+  case $cur in
+    0.[0-9]*) if [ "$cur" != "$IMAGE_LINE" ]; then hum "  vedun $IMAGE_LINE is available: vedun upgrade (it shows what changes first)"; fi ;;
+  esac
+  return 0
 }
 cmd_open() {
   rec_load
@@ -590,7 +633,8 @@ Usage: vedun <command> [--json] [--dry-run] [--yes]
   stop         stop the service
   status       container state, health, URL and which keys are set
   logs         follow the service log (--tail N, default 100)
-  update       get the new image (or rebuild from source) and restart
+  update       get the new image of the same line (or rebuild from source) and restart
+  upgrade      move to the newest minor line: shows what changes, asks first
   open         open the dashboard in the browser
   keys [what]  change keys: openrouter, typesafe, api-key, password; show them: show-api-key, show-password
   doctor       check the installation, with a fix for every problem
@@ -624,6 +668,7 @@ main() {
     status) cmd_status ;;
     logs) cmd_logs ;;
     update) cmd_update ;;
+    upgrade) cmd_upgrade ;;
     open) cmd_open ;;
     keys) cmd_keys "$arg" ;;
     doctor) cmd_doctor ;;

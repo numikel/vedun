@@ -22,8 +22,10 @@ Never print or ask for keys while diagnosing: `status` and `doctor` only say whe
 |---|---|---|
 | `docker info` fails | Docker Desktop / the daemon is not running | start it, wait until it runs, `vedun start` |
 | port 8765 in use by another program | another service | free it, or reinstall with `--port 8766` (Windows: `$env:VEDUN_PORT`) |
-| every route answers 503, health is `ok` | a required key (`VEDUN_API_KEY`, `VEDUN_DASH_USER`, `VEDUN_DASH_PASSWORD`) is missing | `vedun keys` / `.\vedun.ps1 setup`, then `vedun start` (keys are passed only at start) |
-| 401 in the browser or for the agent | wrong login / old API key | `vedun keys show-password` / `show-api-key` (Windows `keys show`) in the user's terminal; reconnect the agent after a key rotation |
+| every route answers 503, health is `ok` | the dashboard login (`VEDUN_DASH_USER`, `VEDUN_DASH_PASSWORD`) is missing | `vedun keys` / `.\vedun.ps1 setup`, then `vedun start` (keys are passed only at start) |
+| only `/api` or `/mcp` answer 503, the dashboard opens | no key could open them: no `VEDUN_API_KEY` and no active client key | create a key on the dashboard page **MCP connection**, or set the master key with `vedun keys api-key` |
+| 403 `insufficient_scope` for the agent or a script | a client key without that permission | create a key with the permission on **MCP connection** (MCP for agents, REST read / write for scripts) |
+| 401 in the browser or for the agent | wrong login / old, revoked or expired key | `vedun keys show-password` / `show-api-key` (Windows `keys show`) in the user's terminal; reconnect the agent after a key rotation |
 | MCP tools missing in the agent | agent not connected, or connected before a key rotation | see the `vedun-install` skill, step 5; start a new agent session |
 | search answers but `degraded` / full-text only | no OpenRouter key, or the daily budget (`VEDUN_DAILY_BUDGET_USD`, default 3 USD) is used up | add the key with `vedun keys openrouter`, or wait for the next UTC day |
 | results not reranked (`rerank_error`) | no Typesafe key (optional) | add it with `vedun keys typesafe`, or ignore |

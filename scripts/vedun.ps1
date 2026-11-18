@@ -15,6 +15,7 @@ param(
 $ErrorActionPreference = 'Stop'
 
 $Version = '0.1.2'
+$ImageLine = '0.2'  # the minor line this launcher belongs to: upgrade moves compose.yaml to it
 $Dir = $PSScriptRoot
 $Port = if ($env:VEDUN_PORT) { $env:VEDUN_PORT } else { '8765' }
 $Url = "http://127.0.0.1:$Port"
@@ -180,13 +181,39 @@ function Invoke-Keys {
     if (Test-Health) { Say '  applying: restarting with the new keys'; Invoke-Compose @('up', '-d') -WithSecrets }
 }
 
+# Invoke-Upgrade: move compose.yaml to this launcher's minor line, after saying what changes
+function Invoke-Upgrade {
+    Test-Folder; Test-Docker
+    $file = Join-Path $Dir 'compose.yaml'
+    $text = [IO.File]::ReadAllText($file)
+    $m = [regex]::Match($text, '\$\{VEDUN_IMAGE:-([^}]*)\}')
+    if (-not $m.Success) { Fail 'compose.yaml has no image line to change.' 'Download compose.release.yaml again (see the README).' }
+    $cur = $m.Groups[1].Value
+    $new = ($cur -replace ':[^:]*$', '') + ":$ImageLine"
+    if ($cur -eq $new) { Ok "already on the $ImageLine line; .\vedun.ps1 update gets its fixes"; return }
+    Say "  Upgrade $cur -> $new. What changes in ${ImageLine}:"
+    Say "    - keys for AI clients and scripts are created on the dashboard page 'MCP connection' (permissions, expiry)"
+    Say '    - the dashboard opens even without the master API key'
+    Say '  Release notes: https://github.com/numikel/vedun/releases'
+    if ((Read-Host '  Upgrade now? [y/N]') -notmatch '^(y|yes|t|tak)$') { Say '  Upgrade cancelled; nothing was changed.'; return }
+    [IO.File]::WriteAllText($file, $text.Replace($m.Value, '${VEDUN_IMAGE:-' + $new + '}'), (New-Object Text.UTF8Encoding $false))
+    Invoke-Compose @('pull')
+    Invoke-Start
+    Ok "vedun upgraded to $ImageLine"
+}
+function Show-UpgradeHint {
+    $m = [regex]::Match([IO.File]::ReadAllText((Join-Path $Dir 'compose.yaml')), '\$\{VEDUN_IMAGE:-[^}]*:(0\.\d+)\}')
+    if ($m.Success -and $m.Groups[1].Value -ne $ImageLine) { Say "  vedun $ImageLine is available: .\vedun.ps1 upgrade (it shows what changes first)" 'Cyan' }
+}
+
 switch ($Command) {
     'setup' { Invoke-Setup }
     'start' { Invoke-Start }
     'stop' { Test-Folder; Invoke-Compose @('stop'); Ok 'vedun stopped' }
     'status' { Invoke-Status }
     'logs' { Test-Folder; Invoke-Compose @('logs', '-f', '--tail', '100') }
-    'update' { Test-Folder; Test-Docker; Invoke-Compose @('pull'); Invoke-Start }
+    'update' { Test-Folder; Test-Docker; Invoke-Compose @('pull'); Invoke-Start; Show-UpgradeHint }
+    'upgrade' { Invoke-Upgrade }
     'open' { Start-Process $Url }
     'keys' { Invoke-Keys }
     'version' { Say "vedun $Version" }
@@ -196,7 +223,8 @@ switch ($Command) {
         Say '  .\vedun.ps1 start | stop   start or stop the service'
         Say '  .\vedun.ps1 status         does it answer, which keys are set'
         Say '  .\vedun.ps1 logs           follow the service log'
-        Say '  .\vedun.ps1 update         download the new image and restart'
+        Say '  .\vedun.ps1 update         download the new image of the same line and restart'
+        Say '  .\vedun.ps1 upgrade        move to the newest minor line (shows what changes, asks first)'
         Say '  .\vedun.ps1 open           open the dashboard'
         Say '  .\vedun.ps1 keys openrouter|typesafe|password|api-key|show'
     }
