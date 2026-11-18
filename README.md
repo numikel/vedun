@@ -180,7 +180,8 @@ key is described in [`docs/reference.md`](docs/reference.md#corpus-profile). A p
 (`{"extends": "<path>"}`), so a private profile can stay outside the install folder.
 
 Where newer editions come from can be a plugin (`source_plugin`): a small Python file that lists the publisher's
-catalogue and downloads a PDF. Without a plugin, you add files yourself; everything else works the same.
+catalogue and downloads a PDF. Without a plugin, you add files yourself; everything else works the same. How to write
+one, with a working example: [Writing a source plugin](docs/reference.md#writing-a-source-plugin).
 
 ## How answers are made
 

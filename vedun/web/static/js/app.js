@@ -297,7 +297,8 @@
       showMsg("");
       var fd = new FormData();
       files.forEach(function (f) { fd.append(form.dataset.fileField || "files", f, f.name); });
-      fd.append(form.dataset.fieldFetch || "fetch_from_source", $("#fetch-from-source", form).checked ? "true" : "false");
+      var fetchBox = $("#fetch-from-source", form);  // absent when no source plugin is configured
+      fd.append(form.dataset.fieldFetch || "fetch_from_source", fetchBox && fetchBox.checked ? "true" : "false");
       start.disabled = true;
       fetch(form.dataset.uploadUrl, { method: "POST", body: fd, headers: { "Accept": "application/json", "X-Requested-With": "vedun" } })
         .then(function (r) {

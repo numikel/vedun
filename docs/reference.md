@@ -51,7 +51,7 @@ file that names it); local keys override it. Example: [`vedun.config.example.jso
 | `fast_table_documents` | documents whose tables use Docling's FAST TableFormer (ACCURATE can take hours on huge numeric tables) |
 | `w_fts`, `w_vec`, `rrf_k`, `rerank_candidates`, `reranker`, `rerank_instruction` | retrieval defaults (0.4 / 0.6 / 60 / 30 / none) |
 | `text_models`, `image_models`, `default_text_model`, `default_image_model`, `models` | embedding models; `models` defines or overrides one on any OpenAI-compatible `/embeddings` endpoint: `{"<key>": {"api_id", "dim", "base_url", "api_key_env", "query_template", "price_text_per_m", …}}`, key `[a-z0-9_]{1,16}` |
-| `source_plugin` | Python file that provides newer editions (below) |
+| `source_plugin` | Python file that provides newer editions ([Writing a source plugin](#writing-a-source-plugin)) |
 | `mcp_tool_prefix` | prefix of the MCP tool names (default `kb` → `kb_lookup`) |
 | `citation_skip_dirs` | folders `check-citations` skips |
 | `ui_language` | default dashboard language, `en` or `pl` (a visitor can switch; `?lang=` and a cookie win) |
@@ -233,16 +233,31 @@ was given. The one exception is an empty knowledge base: its first sync takes ev
 PDF deleted. If conversion or indexing fails, the new PDF goes to `<pdf_dir>/.incoming/rejected/` and the old edition
 stays. Known limit: `plan_sync` ignores files whose id ends with a letter suffix (`7-11A_202301.pdf`).
 
-### Document source plugin (`vedun.catalog`)
+### Writing a source plugin
 
-The profile key `source_plugin` names a Python file (relative to the profile) defining `SOURCE` with `name`,
-`fetch() -> Catalog` and `download(entry, dest) -> int` (protocol `catalog.Source`; `catalog.http_json` and
-`http_download` give sequential requests, a `%PDF` check and a size cap). The core validates every entry (id must match
-`doc_id_pattern`, edition `YYYY-MM`), caches the snapshot in `state.db`, labels statuses (newest local PDF vs the
-catalog's publication month), downloads next to the old edition and retires the old PDF only after the new one indexed.
-`name` is shown in the dashboard ("Status against <name>"). Without a plugin, catalog refresh and `fetch_from_source`
-fail with a clear message; folder, upload and sync still work. The plugin is code: only point `source_plugin` at files
-you trust, and respect the publisher's terms of use when you write one.
+A source plugin tells vedun where newer editions of your documents come from. With one, the dashboard shows which
+documents are out of date and **Sync** can fetch the new PDFs; without one, you add PDFs yourself and the source
+options are hidden. The plugin is one Python file; a complete, working example is
+[`examples/source_plugin.py`](../examples/source_plugin.py) (a JSON catalogue published at a URL).
+
+1. **Copy the example** next to your profile (the install folder's `data/`) and point the profile at it:
+   `{"source_plugin": "source_plugin.py"}` in `data/vedun.config.json` (the path is relative to the profile).
+2. **Set `name`**: the publisher shown in the dashboard ("Fetch newer editions from <name>").
+3. **`fetch()`** returns a `Catalog` whose `entries` map each document id to a `CatalogEntry(doc_id, title, item_id,
+   published, edition)`: `item_id` is whatever `download` needs (a URL, an API id), `published` is "<Month> <YYYY>" and
+   `edition_from_published()` turns it into `YYYY-MM`. Raise on any error: the previous snapshot stays.
+4. **`download(entry, dest)`** writes the PDF of `entry` to `dest` and returns its size. `catalog.http_json` and
+   `http_download` make sequential requests with a pause, an identifying User-Agent, a `%PDF` check and a size cap.
+5. **Check it**: restart vedun, open **Sync** and press **Refresh the catalog**; the job log names every entry it
+   dropped and why.
+
+What vedun does with it (`vedun.catalog`): it validates every entry (the id must match `doc_id_pattern`, the edition
+must be `YYYY-MM`, others are dropped with a warning), caches the snapshot in `state.db`, labels each document
+`current`, `outdated`, `missing_locally` or `withdrawn` (newest local PDF vs the catalogue's month), downloads next to
+the old edition and retires the old PDF only after the new one is indexed. The protocol is `catalog.Source`.
+
+The plugin is code that vedun imports: only point `source_plugin` at files you wrote or trust, and respect the
+publisher's terms of use (many forbid automated downloads).
 
 ### Container layout
 

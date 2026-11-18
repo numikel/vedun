@@ -28,10 +28,12 @@
       <ul id="file-list" class="file-list" aria-label="{{ _('Selected files') }}"></ul>
       <div id="file-summary" class="hint" hidden></div>
 
+      {% if has_source() %}
       <label class="check check-block">
         <input type="checkbox" name="fetch_from_source" id="fetch-from-source" value="true">
         <span><strong>{{ _("Fetch newer editions from {source}", source=source_name()) }}</strong><span class="hint block">{{ _("Checks the catalog and downloads only documents that have a newer edition than the local one. Needs internet access.") }}</span></span>
       </label>
+      {% endif %}
 
       <div id="sync-msg" role="alert" aria-live="assertive"></div>
       <div class="form-actions">
@@ -56,7 +58,10 @@
   <aside class="sync-side">
     <section class="card" aria-labelledby="h-cat">
       <div class="card-head"><h2 id="h-cat">{{ _("Catalog of {source}", source=source_name()) }}</h2></div>
-      {% if cat.available and cat.counts %}
+      {% if not has_source() %}
+      {% set guide %}<a href="{{ PLUGIN_GUIDE_URL }}" target="_blank" rel="noopener">{{ _("Writing a source plugin") }}</a>{% endset %}
+      <p class="muted">{{ _("No document source is configured: add PDFs by upload or to the PDF folder. A source plugin lets vedun find newer editions and download them ({guide}).", guide=guide) }}</p>
+      {% elif cat.available and cat.counts %}
       <ul class="status-list">
         {% for key in ['current','outdated','missing_locally','withdrawn'] %}
         {% set meta = STATUS_META[key] %}
@@ -66,10 +71,12 @@
       {% else %}
       <p class="muted">{{ _("The catalog has not been fetched yet, so it is not known which editions are out of date.") }}</p>
       {% endif %}
+      {% if has_source() %}
       <button type="button" class="btn btn-block" hx-post="/sync/catalog-refresh" hx-target="#live-job" hx-swap="innerHTML" hx-disabled-elt="this" {{ 'disabled' if not jobs_ok }}>
         {{ m.icon('refresh') }}<span>{{ _("Refresh the catalog of {source}", source=source_name()) }}</span>
       </button>
       <p class="hint">{{ _("Fetches the list of current documents and their editions. Does not change the local database.") }}</p>
+      {% endif %}
     </section>
 
     <section class="card" aria-labelledby="h-rep">

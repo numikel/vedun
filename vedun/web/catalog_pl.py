@@ -414,6 +414,12 @@ PL: dict[str, str] = {
     "Fetches the list of current documents and their editions. Does not change the local database.": (
         "Pobiera listę aktualnych dokumentów i ich edycji. Nie zmienia lokalnej bazy."
     ),
+    "Writing a source plugin": "jak napisać wtyczkę źródła",
+    "No document source is configured: add PDFs by upload or to the PDF folder. A source plugin lets vedun find "
+    "newer editions and download them ({guide}).": (
+        "Źródło dokumentów nie jest skonfigurowane: dodawaj PDF-y przez wysyłanie albo do folderu PDF. Wtyczka źródła "
+        "pozwala vedun znaleźć nowsze edycje i je pobrać ({guide})."
+    ),
     "Change reports": "Raporty zmian",
     "No reports": "Brak raportów",
     "A report of the differences between editions is written after the first sync that replaces a document.": (
