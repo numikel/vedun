@@ -27,7 +27,7 @@ edition, and a quote can be checked against the PDF before it goes into a mail o
   <tr>
     <td width="33%"><a href="docs/images/lookup.png"><img src="docs/images/lookup.png" alt="Exact lookup by clause number"></a></td>
     <td width="33%"><a href="docs/images/overview.png"><img src="docs/images/overview.png" alt="Overview of the knowledge base"></a></td>
-    <td width="33%"><a href="docs/images/connect.png"><img src="docs/images/connect.png" alt="MCP connection settings for AI agents"></a></td>
+    <td width="33%"><a href="docs/images/connect.png"><img src="docs/images/connect.png" alt="MCP connection: endpoint, master key on request and keys for clients with permissions"></a></td>
   </tr>
   <tr>
     <td><b>Exact lookup</b>: a clause by its number, with its edition and citation</td>
