@@ -21,7 +21,7 @@
     {% if protocol %}
     {% set protocol_el %}<span class="mono">{{ protocol }}</span>{% endset %}
     {% set handshake_el %}<span class="mono">initialize</span>{% endset %}
-    <dt>{{ _("Protocol") }}</dt><dd>{{ _("MCP {protocol}; older clients (the {handshake} handshake) work too", protocol=protocol_el, handshake=handshake_el) }}</dd>
+    <dt>{{ _("Protocol") }}</dt><dd><span>{{ _("MCP {protocol}; older clients (the {handshake} handshake) work too", protocol=protocol_el, handshake=handshake_el) }}</span></dd>
     {% endif %}
     {% if version %}<dt>{{ _("Service version") }}</dt><dd class="mono">{{ version }}</dd>{% endif %}
     <dt>{{ _("Authentication") }}</dt>
@@ -29,7 +29,8 @@
       {% set header_el %}<span class="mono">{{ key_header }}: &lt;{{ _("key") }}&gt;</span>{% endset %}
       {% set bearer_el %}<span class="mono">Authorization: Bearer &lt;{{ _("key") }}&gt;</span>{% endset %}
       {% set env_el %}<span class="mono">{{ key_env }}</span>{% endset %}
-      {{ _("Header {header} or {bearer}: a key from Keys for clients, or the master key from the server variable {env}.", header=header_el, bearer=bearer_el, env=env_el) }}
+      {# one flex item: .kv dd is a flex row, so loose text and spans would wrap apart #}
+      <span>{{ _("Header {header} or {bearer}: a key from Keys for clients, or the master key from the server variable {env}.", header=header_el, bearer=bearer_el, env=env_el) }}</span>
     </dd>
     <dt>{{ _("Master key") }}</dt>
     <dd>
