@@ -18,7 +18,7 @@ import sqlite_vec
 
 from vedun import config as C
 
-VERSION = "0.2.0"
+VERSION = "0.2.1"
 SHEET_RE = C.doc_id_re().pattern  # corpus profile (config.DOC_ID_PATTERN), read once at import
 PDF_NAME_RE = C.pdf_name_re().pattern
 REPORT_NAME_RE = r"^[A-Za-z0-9][A-Za-z0-9_.\-]{0,120}\.(md|json)$"
