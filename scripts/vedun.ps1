@@ -14,7 +14,7 @@ param(
 )
 $ErrorActionPreference = 'Stop'
 
-$Version = '0.2.0'
+$Version = '0.2.1'
 $ImageLine = '0.2'  # the minor line this launcher belongs to: upgrade moves compose.yaml to it
 $Dir = $PSScriptRoot
 $Port = if ($env:VEDUN_PORT) { $env:VEDUN_PORT } else { '8765' }
